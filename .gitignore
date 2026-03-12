@@ -1,0 +1,13 @@
+.env
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+logs/
+data/docs/
+weaviate_data/
+postgres_data/
+*.egg-info/
+dist/
+.DS_Store

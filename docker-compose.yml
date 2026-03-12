@@ -1,0 +1,124 @@
+version: "3.8"
+
+# ────────────────────────────────────────────────────────────────────────────
+# Phase 1 – Demo-grade RAG infrastructure
+#   • Weaviate  – vector store (manual vectors, no built-in vectorizer)
+#   • PostgreSQL – Airflow metadata DB
+#   • Airflow webserver + scheduler (LocalExecutor)
+# ────────────────────────────────────────────────────────────────────────────
+
+x-airflow-common: &airflow-common
+  image: apache/airflow:2.8.1-python3.11
+  environment: &airflow-common-env
+    AIRFLOW__CORE__EXECUTOR: LocalExecutor
+    AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+    AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+    AIRFLOW__CORE__FERNET_KEY: ""
+    AIRFLOW__WEBSERVER__SECRET_KEY: "demo-secret-key-change-in-prod"
+    # Inject pipeline deps at container start (demo convenience)
+    _PIP_ADDITIONAL_REQUIREMENTS: "pymupdf==1.24.0 tiktoken==0.6.0 weaviate-client==4.5.4 openai==1.30.0 python-dotenv==1.0.1"
+    # App config forwarded into Airflow workers
+    OPENAI_API_KEY: ${OPENAI_API_KEY}
+    WEAVIATE_HOST: weaviate
+    WEAVIATE_HTTP_PORT: "8080"
+    WEAVIATE_GRPC_PORT: "50051"
+    DOCS_PATH: /opt/airflow/data/docs
+  volumes:
+    - ./dags:/opt/airflow/dags
+    - ./src:/opt/airflow/src
+    - ./logs:/opt/airflow/logs
+    - ${DOCS_PATH:-./data/docs}:/opt/airflow/data/docs:ro
+  depends_on:
+    postgres:
+      condition: service_healthy
+    weaviate:
+      condition: service_healthy
+
+services:
+  # ── Weaviate ───────────────────────────────────────────────────────────────
+  weaviate:
+    image: semitechnologies/weaviate:1.24.1
+    container_name: weaviate
+    restart: unless-stopped
+    ports:
+      - "8080:8080"   # HTTP / REST + GraphQL
+      - "50051:50051" # gRPC
+    environment:
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: "true"
+      PERSISTENCE_DATA_PATH: /var/lib/weaviate
+      DEFAULT_VECTORIZER_MODULE: none   # we push vectors manually
+      CLUSTER_HOSTNAME: node1
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:8080/v1/.well-known/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - weaviate_data:/var/lib/weaviate
+
+  # ── PostgreSQL (Airflow metadata DB) ──────────────────────────────────────
+  postgres:
+    image: postgres:16-alpine
+    container_name: airflow-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  # ── Airflow init (runs once, sets up DB + admin user) ─────────────────────
+  airflow-init:
+    <<: *airflow-common
+    container_name: airflow-init
+    entrypoint: /bin/bash
+    command:
+      - -c
+      - |
+        airflow db upgrade
+        airflow users create \
+          --username admin \
+          --password admin \
+          --firstname Admin \
+          --lastname User \
+          --role Admin \
+          --email admin@example.com
+    restart: "no"
+
+  # ── Airflow webserver ──────────────────────────────────────────────────────
+  airflow-webserver:
+    <<: *airflow-common
+    container_name: airflow-webserver
+    restart: unless-stopped
+    command: webserver
+    ports:
+      - "8081:8080"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+  # ── Airflow scheduler ──────────────────────────────────────────────────────
+  airflow-scheduler:
+    <<: *airflow-common
+    container_name: airflow-scheduler
+    restart: unless-stopped
+    command: scheduler
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+
+volumes:
+  weaviate_data:
+  postgres_data:
