@@ -8,8 +8,15 @@ Schedule: manual (schedule_interval=None) — trigger via the Airflow UI
 Task graph:
     validate_docs → parse_and_chunk → embed_and_store → verify_ingestion
 
-Each task is intentionally coarse-grained for Phase 1.
-Phase 2 will fan-out parse/chunk per document for parallelism.
+Airflow Variables (set in Admin → Variables):
+    ingestion_use_smart_chunking   "true" | "false"  (default: "false")
+        Controls which chunking strategy and Weaviate collection are used.
+        false → Phase-1 basic token chunker  → SecDocument
+        true  → Phase-2 parent-child chunker → SecDocumentSmart
+
+    ingestion_recreate_collection  "true" | "false"  (default: "false")
+        Drop and recreate the target collection before ingestion.
+        Set to "true" only when you want a clean re-ingest.
 """
 import logging
 import os
@@ -18,6 +25,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 
 from airflow import DAG
+from airflow.models import Variable
 from airflow.operators.python import PythonOperator
 
 # Make the repo's src/ package importable inside Airflow workers.
@@ -57,64 +65,110 @@ def validate_docs(**context):
     return len(filenames)
 
 
+def _get_use_smart() -> bool:
+    """
+    Read the ingestion_use_smart_chunking Airflow Variable.
+    Always call this inside a task callable — never at module level —
+    so the scheduler does not query the metadata DB on every DAG parse.
+    """
+    return Variable.get("ingestion_use_smart_chunking", default_var="false").lower() == "true"
+
+
+def _get_recreate_collection() -> bool:
+    return Variable.get("ingestion_recreate_collection", default_var="false").lower() == "true"
+
+
 def parse_and_chunk(**context):
     """
-    Parse PDFs and chunk them.
+    Parse PDFs and chunk them (mode determined by ingestion_use_smart_chunking).
     Pushes chunk count to XCom; actual chunk data is NOT stored in XCom
-    (too large) — embed_and_store re-runs this step cheaply.
+    (too large) — embed_and_store re-runs the full pipeline cheaply.
     """
     from dotenv import load_dotenv
     load_dotenv()
 
     from src.config import Config
     from src.ingestion.chunker import chunk_documents
+    from src.ingestion.smart_chunker import chunk_documents_smart
     from src.ingestion.pdf_parser import parse_all_pdfs
 
+    use_smart = _get_use_smart()
     config = Config(docs_path=Path(DOCS_PATH))
     documents = parse_all_pdfs(config.docs_path)
-    chunks = chunk_documents(documents, config.chunk)
 
-    logger.info("Parsed %d documents → %d chunks", len(documents), len(chunks))
+    if use_smart:
+        chunks = chunk_documents_smart(documents, config.smart_chunk)
+    else:
+        chunks = chunk_documents(documents, config.chunk)
+
+    mode = "smart" if use_smart else "basic"
+    logger.info("[mode=%s] Parsed %d documents → %d chunks", mode, len(documents), len(chunks))
     context["ti"].xcom_push(key="chunk_count", value=len(chunks))
+    context["ti"].xcom_push(key="use_smart", value=use_smart)
     return len(chunks)
 
 
 def embed_and_store(**context):
     """
-    Full pipeline in one task: parse → chunk → embed → store.
-    Re-parsing is cheap (~seconds for 20 PDFs); avoids large XCom payloads.
+    Full pipeline: parse → chunk → embed → store.
+    Mode (basic vs smart) is read from the ingestion_use_smart_chunking Variable.
+    Re-parsing is cheap; avoids large XCom payloads.
     """
     from dotenv import load_dotenv
     load_dotenv()
 
     from src.ingestion.pipeline import run_ingestion_pipeline
 
-    result = run_ingestion_pipeline(docs_path=Path(DOCS_PATH))
+    use_smart = _get_use_smart()
+    recreate_collection = _get_recreate_collection()
+
+    logger.info(
+        "Starting ingestion  use_smart=%s  recreate_collection=%s",
+        use_smart, recreate_collection,
+    )
+
+    result = run_ingestion_pipeline(
+        docs_path=Path(DOCS_PATH),
+        use_smart=use_smart,
+        recreate_collection=recreate_collection,
+    )
     context["ti"].xcom_push(key="pipeline_result", value=result)
     logger.info("Pipeline result: %s", result)
     return result["chunks_stored"]
 
 
 def verify_ingestion(**context):
-    """Confirm that Weaviate contains at least as many docs as were ingested."""
+    """
+    Confirm Weaviate contains at least as many chunks as were ingested.
+    Queries SecDocumentSmart when use_smart=True, SecDocument otherwise.
+    """
     from dotenv import load_dotenv
     load_dotenv()
 
     from src.config import Config
     from src.ingestion import weaviate_store
 
+    use_smart = _get_use_smart()
     config = Config()
     client = weaviate_store.get_client(config.weaviate)
     try:
-        total = weaviate_store.get_total_count(client, config.weaviate)
+        if use_smart:
+            total = weaviate_store.get_total_count_smart(client, config.weaviate)
+            collection = config.weaviate.smart_collection_name
+        else:
+            total = weaviate_store.get_total_count(client, config.weaviate)
+            collection = config.weaviate.collection_name
     finally:
         client.close()
 
     expected = context["ti"].xcom_pull(task_ids="embed_and_store")
-    logger.info("Verification: %d chunks in Weaviate (expected >= %d)", total, expected or 0)
+    logger.info(
+        "Verification [%s]: %d chunks in Weaviate (expected >= %d)",
+        collection, total, expected or 0,
+    )
 
     if total == 0:
-        raise RuntimeError("Weaviate collection is empty after ingestion!")
+        raise RuntimeError(f"Weaviate collection '{collection}' is empty after ingestion!")
 
     return total
 
@@ -128,7 +182,7 @@ with DAG(
     start_date=datetime(2024, 1, 1),
     schedule_interval=None,   # manual trigger only
     catchup=False,
-    tags=["rag", "ingestion", "sec", "phase-1"],
+    tags=["rag", "ingestion", "sec"],
     doc_md=__doc__,
 ) as dag:
 

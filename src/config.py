@@ -26,6 +26,33 @@ class ChunkConfig:
 
 
 @dataclass
+class SmartChunkConfig:
+    """
+    Parent-child chunking parameters (Phase 2).
+
+    Parent chunks (~1000 tokens) are returned to the LLM for generation.
+    Child chunks (~300 tokens) are embedded for precise vector retrieval.
+    Each child stores a reference to its parent so the retriever can return
+    the richer parent context after matching on the smaller child vector.
+    """
+    # Parent chunk: larger unit of text returned to the LLM
+    parent_max_tokens: int = field(
+        default_factory=lambda: int(os.getenv("SMART_PARENT_MAX_TOKENS", "1000"))
+    )
+    parent_overlap_tokens: int = field(
+        default_factory=lambda: int(os.getenv("SMART_PARENT_OVERLAP_TOKENS", "100"))
+    )
+    # Child chunk: smaller unit embedded for retrieval
+    child_max_tokens: int = field(
+        default_factory=lambda: int(os.getenv("SMART_CHILD_MAX_TOKENS", "300"))
+    )
+    child_overlap_tokens: int = field(
+        default_factory=lambda: int(os.getenv("SMART_CHILD_OVERLAP_TOKENS", "50"))
+    )
+    encoding: str = "cl100k_base"
+
+
+@dataclass
 class WeaviateConfig:
     """Connection settings for Weaviate."""
     http_host: str = field(
@@ -38,6 +65,9 @@ class WeaviateConfig:
         default_factory=lambda: int(os.getenv("WEAVIATE_GRPC_PORT", "50051"))
     )
     collection_name: str = "SecDocument"
+    smart_collection_name: str = field(
+        default_factory=lambda: os.getenv("WEAVIATE_SMART_COLLECTION", "SecDocumentSmart")
+    )
     batch_size: int = 100
 
 
@@ -57,6 +87,43 @@ class EmbeddingConfig:
 
 
 @dataclass
+class GenerationConfig:
+    """OpenAI Chat Completions settings for answer generation."""
+    model: str = field(
+        default_factory=lambda: os.getenv("GENERATION_MODEL", "gpt-4o-mini")
+    )
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    max_tokens: int = field(
+        default_factory=lambda: int(os.getenv("GENERATION_MAX_TOKENS", "1024"))
+    )
+    temperature: float = field(
+        default_factory=lambda: float(os.getenv("GENERATION_TEMPERATURE", "0.0"))
+    )
+
+
+@dataclass
+class RetrievalConfig:
+    """Vector retrieval settings."""
+    top_k: int = field(
+        default_factory=lambda: int(os.getenv("RETRIEVAL_TOP_K", "5"))
+    )
+    # "semantic" → pure cosine similarity (near_vector)
+    # "hybrid"   → BM25 + cosine via Weaviate hybrid search
+    mode: str = field(
+        default_factory=lambda: os.getenv("RETRIEVAL_MODE", "hybrid")
+    )
+    # alpha controls BM25 / vector balance in hybrid mode:
+    #   0.0 = pure BM25 (lexical only)
+    #   0.5 = equal weight  (default)
+    #   1.0 = pure vector   (same as semantic)
+    alpha: float = field(
+        default_factory=lambda: float(os.getenv("RETRIEVAL_HYBRID_ALPHA", "0.5"))
+    )
+
+
+@dataclass
 class Config:
     """Top-level config aggregating all sub-configs."""
     docs_path: Path = field(
@@ -68,5 +135,8 @@ class Config:
         )
     )
     chunk: ChunkConfig = field(default_factory=ChunkConfig)
+    smart_chunk: SmartChunkConfig = field(default_factory=SmartChunkConfig)
     weaviate: WeaviateConfig = field(default_factory=WeaviateConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
+    generation: GenerationConfig = field(default_factory=GenerationConfig)
+    retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)

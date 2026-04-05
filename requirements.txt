@@ -12,3 +12,17 @@ openai==1.30.0
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
+
+# ── API layer ─────────────────────────────────────────────────────────────────
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+
+# ── Evaluation (RAGAS + GEval-style LLM scoring) ──────────────────────────────
+# RAGAS 0.2 API: EvaluationDataset, SingleTurnSample, evaluate()
+# Metrics: Faithfulness, AnswerRelevancy, AnswerCorrectness
+ragas>=0.2.0,<0.3.0
+langchain-core>=0.2.0,<0.4.0            # base abstractions (Document, etc.)
+langchain-openai>=0.1.0,<0.3.0          # RAGAS LLM wrapper backend
+langchain-text-splitters>=0.2.0,<0.4.0  # RecursiveCharacterTextSplitter (Phase-2 chunker)
+datasets>=2.19.0                  # required by ragas.evaluate(); ragas 0.2.x pulls datasets 4.x
+numpy>=1.26.0                    # answer_similarity cosine computation

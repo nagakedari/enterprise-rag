@@ -1,0 +1,11 @@
+metric,mean,std,min,max
+exactness,0.2617,0.254,0.0426,0.8235
+answer_similarity,0.4565,0.3604,0.1226,0.9321
+correctness,0.375,0.2555,0.1719,0.8438
+context_precision,0.7907,0.3268,0.0,1.0
+context_recall,0.4216,0.2735,0.0,0.8571
+context_relevance,0.75,0.27,0.25,1.0
+faithfulness,0.4417,0.4832,0.0,1.0
+hallucination_rate,0.5583,0.4832,0.0,1.0
+answer_relevance,0.3777,0.4726,0.0,0.9955
+factual_error_rate,0.6413,0.4047,0.0,1.0
