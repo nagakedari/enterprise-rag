@@ -17,6 +17,7 @@ from src.api.models import ChatRequest, ChatResponse, SourceDocument
 from src.config import Config
 from src.generation.generator import generate
 from src.retrieval.retriever import retrieve
+from src.retrieval.llamaindex_retriever import retrieve_llamaindex
 
 load_dotenv()
 
@@ -52,15 +53,40 @@ def chat(request: ChatRequest) -> ChatResponse:
                 request.query, request.top_k, request.company, request.year, request.quarter)
 
     # ── Retrieval ──────────────────────────────────────────────────────────────
+    logger.info(
+        "engine=%s  use_smart=%s  retrieval_mode=%s  alpha=%s",
+        request.engine, request.use_smart, request.retrieval_mode, request.retrieval_alpha,
+    )
     try:
-        chunks = retrieve(
-            query=request.query,
-            config=_config,
-            top_k=request.top_k,
-            company=request.company,
-            year=request.year,
-            quarter=request.quarter,
-        )
+        if request.engine == "llamaindex":
+            chunks = retrieve_llamaindex(
+                query=request.query,
+                config=_config,
+                top_k=request.top_k,
+                company=request.company,
+                year=request.year,
+                quarter=request.quarter,
+                use_smart=request.use_smart,
+                mode=request.retrieval_mode,
+                alpha=request.retrieval_alpha,
+            )
+        else:
+            collection_name = (
+                _config.weaviate.smart_collection_name
+                if request.use_smart
+                else _config.weaviate.collection_name
+            )
+            chunks = retrieve(
+                query=request.query,
+                config=_config,
+                top_k=request.top_k,
+                company=request.company,
+                year=request.year,
+                quarter=request.quarter,
+                collection_name=collection_name,
+                mode=request.retrieval_mode,
+                alpha=request.retrieval_alpha,
+            )
     except Exception as exc:
         logger.exception("Retrieval failed")
         raise HTTPException(status_code=502, detail=f"Retrieval error: {exc}") from exc

@@ -11,6 +11,29 @@ class ChatRequest(BaseModel):
     company: Optional[str] = Field(default=None, description="Ticker symbol filter, e.g. 'AAPL'")
     year: Optional[int] = Field(default=None, description="Filing year filter, e.g. 2023")
     quarter: Optional[str] = Field(default=None, description="Quarter filter, e.g. 'Q2'")
+    # Retrieval engine and chunking strategy
+    engine: str = Field(
+        default="custom",
+        description="Retrieval engine: 'custom' (direct Weaviate client) or 'llamaindex'",
+    )
+    use_smart: bool = Field(
+        default=False,
+        description=(
+            "False → basic collection (SecDocument / SecDocumentLI). "
+            "True  → parent-child collection (SecDocumentSmart / SecDocumentSmartLI)."
+        ),
+    )
+    # Per-request retrieval mode override (falls back to RETRIEVAL_MODE env var)
+    retrieval_mode: Optional[str] = Field(
+        default=None,
+        description="Override retrieval mode: 'semantic' or 'hybrid'. Defaults to server config.",
+    )
+    retrieval_alpha: Optional[float] = Field(
+        default=None,
+        ge=0.0,
+        le=1.0,
+        description="BM25/vector balance for hybrid mode (0=BM25, 1=vector). Defaults to server config.",
+    )
 
 
 class SourceDocument(BaseModel):

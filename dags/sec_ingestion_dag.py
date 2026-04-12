@@ -9,10 +9,15 @@ Task graph:
     validate_docs → parse_and_chunk → embed_and_store → verify_ingestion
 
 Airflow Variables (set in Admin → Variables):
+    ingestion_engine               "custom" | "llamaindex"  (default: "custom")
+        Selects the ingestion engine.
+        custom     → direct Weaviate client pipeline
+        llamaindex → LlamaIndex document parser + vector store
+
     ingestion_use_smart_chunking   "true" | "false"  (default: "false")
         Controls which chunking strategy and Weaviate collection are used.
-        false → Phase-1 basic token chunker  → SecDocument
-        true  → Phase-2 parent-child chunker → SecDocumentSmart
+        false → Phase-1 basic token chunker  → SecDocument / SecDocumentLI
+        true  → Phase-2 parent-child chunker → SecDocumentSmart / SecDocumentSmartLI
 
     ingestion_recreate_collection  "true" | "false"  (default: "false")
         Drop and recreate the target collection before ingestion.
@@ -78,6 +83,14 @@ def _get_recreate_collection() -> bool:
     return Variable.get("ingestion_recreate_collection", default_var="false").lower() == "true"
 
 
+def _get_engine() -> str:
+    """
+    Read the ingestion_engine Airflow Variable.
+    Allowed values: "custom" | "llamaindex"  (default: "custom")
+    """
+    return Variable.get("ingestion_engine", default_var="custom").lower()
+
+
 def parse_and_chunk(**context):
     """
     Parse PDFs and chunk them (mode determined by ingestion_use_smart_chunking).
@@ -121,20 +134,25 @@ def embed_and_store(**context):
 
     use_smart = _get_use_smart()
     recreate_collection = _get_recreate_collection()
+    engine = _get_engine()
 
     logger.info(
-        "Starting ingestion  use_smart=%s  recreate_collection=%s",
-        use_smart, recreate_collection,
+        "Starting ingestion  engine=%s  use_smart=%s  recreate_collection=%s",
+        engine, use_smart, recreate_collection,
     )
 
     result = run_ingestion_pipeline(
         docs_path=Path(DOCS_PATH),
+        engine=engine,
         use_smart=use_smart,
         recreate_collection=recreate_collection,
     )
     context["ti"].xcom_push(key="pipeline_result", value=result)
     logger.info("Pipeline result: %s", result)
-    return result["chunks_stored"]
+    # custom pipeline  → "chunks_stored"
+    # llamaindex pipeline → "nodes_indexed"
+    stored = result.get("chunks_stored") or result.get("nodes_indexed", 0)
+    return stored
 
 
 def verify_ingestion(**context):
@@ -149,10 +167,19 @@ def verify_ingestion(**context):
     from src.ingestion import weaviate_store
 
     use_smart = _get_use_smart()
+    engine = _get_engine()
     config = Config()
     client = weaviate_store.get_client(config.weaviate)
     try:
-        if use_smart:
+        if engine == "llamaindex":
+            collection = (
+                config.weaviate.llamaindex_smart_collection_name
+                if use_smart
+                else config.weaviate.llamaindex_collection_name
+            )
+            col = client.collections.get(collection)
+            total = col.aggregate.over_all(total_count=True).total_count or 0
+        elif use_smart:
             total = weaviate_store.get_total_count_smart(client, config.weaviate)
             collection = config.weaviate.smart_collection_name
         else:

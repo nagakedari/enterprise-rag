@@ -45,11 +45,13 @@ load_dotenv()
 
 from src.config import Config
 from src.retrieval.retriever import retrieve
+from src.retrieval.llamaindex_retriever import retrieve_llamaindex
 from src.generation.generator import generate
 from src.evaluation.evaluator import (
     EvalSample,
     evaluate_samples,
     print_summary,
+    build_hallucination_summary,
     METRIC_COLUMNS,
 )
 
@@ -118,18 +120,52 @@ def load_qna(
     return df.sample(n=min(n_samples, len(df)), random_state=random_seed).reset_index(drop=True)
 
 
-def run_rag(question: str, config: Config) -> tuple[str, list[str]]:
+def run_rag(
+    question: str,
+    config: Config,
+    engine: str = "custom",
+    use_smart: bool = False,
+    retrieval_mode: str | None = None,
+    retrieval_alpha: float | None = None,
+) -> tuple[str, list[str]]:
     """
     Execute the full RAG pipeline for a single *question*.
+
+    Args:
+        question:        User question.
+        config:          Project-wide config.
+        engine:          "custom" or "llamaindex".
+        use_smart:       Use smart (parent-child) collection.
+        retrieval_mode:  "semantic" or "hybrid" (overrides config).
+        retrieval_alpha: BM25/vector balance for hybrid (overrides config).
 
     Returns:
         (generated_answer, retrieved_context_strings)
     """
-    chunks = retrieve(
-        query=question,
-        config=config,
-        top_k=config.retrieval.top_k,
-    )
+    if engine == "llamaindex":
+        chunks = retrieve_llamaindex(
+            query=question,
+            config=config,
+            top_k=config.retrieval.top_k,
+            use_smart=use_smart,
+            mode=retrieval_mode,
+            alpha=retrieval_alpha,
+        )
+    else:
+        collection_name = (
+            config.weaviate.smart_collection_name
+            if use_smart
+            else config.weaviate.collection_name
+        )
+        chunks = retrieve(
+            query=question,
+            config=config,
+            top_k=config.retrieval.top_k,
+            collection_name=collection_name,
+            mode=retrieval_mode,
+            alpha=retrieval_alpha,
+        )
+
     generated_answer = generate(
         query=question,
         chunks=chunks,
@@ -180,6 +216,32 @@ def parse_args() -> argparse.Namespace:
         default=42,
         help="Random seed for Q&A sampling (default: 42).",
     )
+    parser.add_argument(
+        "--engine",
+        type=str,
+        default="custom",
+        choices=["custom", "llamaindex"],
+        help="Retrieval engine to evaluate (default: custom).",
+    )
+    parser.add_argument(
+        "--use-smart",
+        action="store_true",
+        default=False,
+        help="Use smart (parent-child) collection: SecDocumentSmart / SecDocumentSmartLI.",
+    )
+    parser.add_argument(
+        "--retrieval-mode",
+        type=str,
+        default=None,
+        choices=["semantic", "hybrid"],
+        help="Override retrieval mode for this run (default: uses RETRIEVAL_MODE env var).",
+    )
+    parser.add_argument(
+        "--alpha",
+        type=float,
+        default=None,
+        help="BM25/vector balance for hybrid mode: 0.0=BM25 only, 1.0=vector only (default: config).",
+    )
     return parser.parse_args()
 
 
@@ -193,6 +255,18 @@ def main() -> None:
             "Export it or add it to your .env file and retry."
         )
         sys.exit(1)
+
+    # Build a run tag for output filenames so different configs don't overwrite each other
+    # e.g. "custom_smart_hybrid_a0.5"
+    mode_tag = args.retrieval_mode or config.retrieval.mode
+    smart_tag = "smart" if args.use_smart else "basic"
+    alpha_tag = f"_a{args.alpha}" if args.alpha is not None else ""
+    run_tag = f"{args.engine}_{smart_tag}_{mode_tag}{alpha_tag}"
+
+    logger.info(
+        "Evaluation config: engine=%s  use_smart=%s  mode=%s  alpha=%s",
+        args.engine, args.use_smart, mode_tag, args.alpha,
+    )
 
     # ── 1. Load golden Q&A pairs ───────────────────────────────────────────
     logger.info(
@@ -219,16 +293,24 @@ def main() -> None:
         current = len(eval_samples) + 1
 
         logger.info(
-            "[%d/%d] RAG: %s ...",
+            "[%d/%d] RAG [%s]: %s ...",
             current,
             len(qna_df),
-            question[:90],
+            run_tag,
+            question[:80],
         )
 
         try:
-            generated_answer, contexts = run_rag(question, config)
+            generated_answer, contexts = run_rag(
+                question,
+                config,
+                engine=args.engine,
+                use_smart=args.use_smart,
+                retrieval_mode=args.retrieval_mode,
+                retrieval_alpha=args.alpha,
+            )
         except Exception as exc:
-            logger.warning("RAG pipeline failed for row %s: %s", idx, exc)
+            logger.warning("RAG pipeline failed for row %s: %s", idx, exc, exc_info=True)
             failed += 1
             continue
 
@@ -264,7 +346,10 @@ def main() -> None:
     print_summary(results_df)
 
     # ── 5. Save per-sample results ─────────────────────────────────────────
-    output_path = Path(args.output)
+    # Embed run_tag into the filename so different configs don't overwrite each other
+    # e.g. evaluation_results_custom_smart_hybrid_a0.5.csv
+    base_path = Path(args.output)
+    output_path = base_path.with_name(f"{base_path.stem}_{run_tag}{base_path.suffix}")
     output_path.parent.mkdir(parents=True, exist_ok=True)
     results_df.to_csv(output_path, index=False)
     logger.info("Per-sample results saved to %s", output_path)
@@ -278,6 +363,12 @@ def main() -> None:
         .T.rename_axis("metric")
         .reset_index()
     )
+    hal_summary = build_hallucination_summary(results_df)
+    # Append hallucination rows with NaN for std/min/max columns they don't have
+    hal_rows = hal_summary.rename(columns={"avg_score": "mean"})[
+        ["metric", "mean", "avg_pct", "flagged_count", "total", "flagged_pct", "threshold", "note"]
+    ]
+    agg = pd.concat([agg, hal_rows], ignore_index=True)
     agg.to_csv(summary_path, index=False)
     logger.info("Aggregated summary saved to %s", summary_path)
 

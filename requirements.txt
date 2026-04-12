@@ -1,14 +1,28 @@
+# ─────────────────────────────────────────────────────────────────────────────
+# All packages are pinned to exact versions to prevent pip's dependency
+# resolver from hitting "resolution-too-deep" on the complex transitive graph
+# of llama-index + langchain + ragas + datasets.
+#
+# Upgrade strategy: bump one package at a time and re-verify compatibility.
+# ─────────────────────────────────────────────────────────────────────────────
+
 # ── PDF parsing ───────────────────────────────────────────────────────────────
 pymupdf==1.24.0
 
-# ── Tokenization (OpenAI cl100k_base tokenizer) ───────────────────────────────
-tiktoken==0.6.0
+# ── Tokenization ─────────────────────────────────────────────────────────────
+tiktoken==0.7.0
 
 # ── Vector DB client ─────────────────────────────────────────────────────────
-weaviate-client==4.5.4
+# 4.7.x satisfies llama-index-vector-stores-weaviate 1.x (requires >=4.5.7)
+# and the Weaviate 1.27+ server we run in docker-compose.
+weaviate-client==4.7.1
 
-# ── Embeddings ───────────────────────────────────────────────────────────────
-openai==1.30.0
+# ── HTTP client (explicit pin keeps weaviate-client and llama-index aligned) ──
+httpx==0.27.0
+
+# ── OpenAI SDK ───────────────────────────────────────────────────────────────
+# 1.51 is compatible with llama-index-embeddings-openai 0.2.x and our API code.
+openai==1.51.0
 
 # ── Utilities ────────────────────────────────────────────────────────────────
 python-dotenv==1.0.1
@@ -17,12 +31,23 @@ python-dotenv==1.0.1
 fastapi==0.111.0
 uvicorn[standard]==0.29.0
 
-# ── Evaluation (RAGAS + GEval-style LLM scoring) ──────────────────────────────
-# RAGAS 0.2 API: EvaluationDataset, SingleTurnSample, evaluate()
-# Metrics: Faithfulness, AnswerRelevancy, AnswerCorrectness
-ragas>=0.2.0,<0.3.0
-langchain-core>=0.2.0,<0.4.0            # base abstractions (Document, etc.)
-langchain-openai>=0.1.0,<0.3.0          # RAGAS LLM wrapper backend
-langchain-text-splitters>=0.2.0,<0.4.0  # RecursiveCharacterTextSplitter (Phase-2 chunker)
-datasets>=2.19.0                  # required by ragas.evaluate(); ragas 0.2.x pulls datasets 4.x
-numpy>=1.26.0                    # answer_similarity cosine computation
+# ── LlamaIndex ────────────────────────────────────────────────────────────────
+# 0.11.x era — all four packages must be from the same release era.
+# llama-index-vector-stores-weaviate 1.1.x requires core>=0.11 and weaviate-client>=4.5.7.
+llama-index-core==0.11.22
+llama-index-vector-stores-weaviate==1.1.0
+llama-index-readers-file==0.2.2
+llama-index-embeddings-openai==0.2.5
+
+# ── LangChain ────────────────────────────────────────────────────────────────
+# 0.2.x family — must match ragas 0.2.x which requires langchain-core<0.3.0.
+# core / openai / text-splitters must all be from the same 0.2.x era.
+langchain-core==0.2.43
+langchain-openai==0.1.25
+langchain-text-splitters==0.2.4
+
+# ── Evaluation ───────────────────────────────────────────────────────────────
+# ragas 0.2.x requires langchain-core>=0.2.0,<0.3.0 and datasets 2.x.
+ragas==0.2.6
+datasets==2.21.0
+numpy==1.26.4

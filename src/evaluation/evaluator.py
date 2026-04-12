@@ -105,8 +105,8 @@ def _run_ragas_metrics(samples: List[EvalSample], config: Config) -> pd.DataFram
 
     llm = LangchainLLMWrapper(
         ChatOpenAI(
-            model=config.generation.model,
-            api_key=config.generation.api_key,
+            model=config.evaluation.model,
+            api_key=config.evaluation.api_key,
             temperature=0,
         )
     )
@@ -115,9 +115,9 @@ def _run_ragas_metrics(samples: List[EvalSample], config: Config) -> pd.DataFram
 
     logger.info(
         "Running RAGAS metrics (AnswerCorrectness, Faithfulness, AnswerRelevancy, "
-        "ContextPrecision, ContextRecall) on %d samples using model=%s ...",
+        "ContextPrecision, ContextRecall) on %d samples using judge model=%s ...",
         len(samples),
-        config.generation.model,
+        config.evaluation.model,
     )
 
     result = ragas_evaluate(
@@ -208,8 +208,8 @@ def evaluate_samples(
         geval_context_relevance(
             question=s.question,
             contexts=s.retrieved_contexts,
-            api_key=config.embedding.api_key,
-            model=config.generation.model,
+            api_key=config.evaluation.api_key,
+            model=config.evaluation.model,
         )
         for s in samples
     ]
@@ -221,8 +221,8 @@ def evaluate_samples(
             question=s.question,
             generated=s.generated_answer,
             golden=s.golden_answer,
-            api_key=config.embedding.api_key,
-            model=config.generation.model,
+            api_key=config.evaluation.api_key,
+            model=config.evaluation.model,
         )
         for s in samples
     ]
@@ -324,6 +324,48 @@ METRIC_DESCRIPTIONS = {
 
 # Columns where lower is better (used to flag direction in the summary)
 _LOWER_IS_BETTER = {"hallucination_rate", "factual_error_rate"}
+
+
+def build_hallucination_summary(df: pd.DataFrame, threshold: float = 0.2) -> pd.DataFrame:
+    """
+    Build a small DataFrame capturing the hallucination summary block.
+
+    Returns a DataFrame with columns::
+
+        metric, avg_score, avg_pct, flagged_count, total, flagged_pct, threshold, note
+
+    One row per hallucination-related metric (hallucination_rate, factual_error_rate).
+    Intended to be appended to the aggregated summary CSV so it is persisted alongside
+    the mean/std/min/max metrics.
+    """
+    n = len(df)
+    rows = []
+
+    for col, note in (
+        ("hallucination_rate",  "1 – faithfulness (context-grounded); lower is better"),
+        ("factual_error_rate",  "GEval claim audit vs golden answer; lower is better"),
+    ):
+        series = df[col].dropna() if col in df.columns else pd.Series(dtype=float)
+        if series.empty:
+            rows.append({
+                "metric": col, "avg_score": float("nan"), "avg_pct": float("nan"),
+                "flagged_count": float("nan"), "total": n,
+                "flagged_pct": float("nan"), "threshold": threshold, "note": note,
+            })
+        else:
+            flagged = int((series > threshold).sum())
+            rows.append({
+                "metric": col,
+                "avg_score": round(float(series.mean()), 4),
+                "avg_pct": round(float(series.mean()) * 100, 2),
+                "flagged_count": flagged,
+                "total": n,
+                "flagged_pct": round(flagged / n * 100, 2),
+                "threshold": threshold,
+                "note": note,
+            })
+
+    return pd.DataFrame(rows)
 
 
 def print_summary(df: pd.DataFrame) -> None:

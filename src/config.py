@@ -68,6 +68,13 @@ class WeaviateConfig:
     smart_collection_name: str = field(
         default_factory=lambda: os.getenv("WEAVIATE_SMART_COLLECTION", "SecDocumentSmart")
     )
+    # LlamaIndex-managed collections (separate from custom pipeline collections)
+    llamaindex_collection_name: str = field(
+        default_factory=lambda: os.getenv("WEAVIATE_LI_COLLECTION", "SecDocumentLI")
+    )
+    llamaindex_smart_collection_name: str = field(
+        default_factory=lambda: os.getenv("WEAVIATE_LI_SMART_COLLECTION", "SecDocumentSmartLI")
+    )
     batch_size: int = 100
 
 
@@ -101,6 +108,27 @@ class GenerationConfig:
     temperature: float = field(
         default_factory=lambda: float(os.getenv("GENERATION_TEMPERATURE", "0.0"))
     )
+
+
+@dataclass
+class EvaluationConfig:
+    """
+    LLM settings for the evaluation / judge step.
+
+    Intentionally separate from GenerationConfig so that evaluation uses a
+    stronger model than the one being tested — avoids the 'LLM judging itself'
+    self-serving bias.
+
+    Default judge: gpt-4o  (stronger than gpt-4o-mini used for generation)
+    Override via EVALUATION_MODEL env var.
+    """
+    model: str = field(
+        default_factory=lambda: os.getenv("EVALUATION_MODEL", "gpt-4o")
+    )
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    temperature: float = 0.0
 
 
 @dataclass
@@ -139,4 +167,11 @@ class Config:
     weaviate: WeaviateConfig = field(default_factory=WeaviateConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
+    evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
+    # Persistent docstore for LlamaIndex AutoMergingRetriever (smart mode)
+    llamaindex_docstore_path: Path = field(
+        default_factory=lambda: Path(
+            os.getenv("LLAMAINDEX_DOCSTORE_PATH", "./storage/llamaindex_docstore")
+        )
+    )

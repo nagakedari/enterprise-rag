@@ -21,11 +21,16 @@ x-airflow-common: &airflow-common
     _PIP_ADDITIONAL_REQUIREMENTS: >-
       pymupdf==1.24.0
       tiktoken==0.6.0
-      weaviate-client==4.5.4
+      weaviate-client>=4.5.7,<5.0.0
       openai==1.30.0
       python-dotenv==1.0.1
       langchain-core>=0.2.0,<0.4.0
       langchain-text-splitters>=0.2.0,<0.4.0
+      httpx>=0.24.0,<0.28.0
+      llama-index-core>=0.10.0,<0.13.0
+      llama-index-vector-stores-weaviate>=1.0.0,<1.3.0
+      llama-index-readers-file>=0.1.0,<0.3.0
+      llama-index-embeddings-openai>=0.1.0,<0.3.0
 
     # App config forwarded into Airflow workers
     OPENAI_API_KEY: ${OPENAI_API_KEY}
@@ -33,11 +38,14 @@ x-airflow-common: &airflow-common
     WEAVIATE_HTTP_PORT: "8080"
     WEAVIATE_GRPC_PORT: "50051"
     DOCS_PATH: /opt/airflow/data/docs
+    # Docstore is written by Airflow and read by the local API — must be a shared mount.
+    LLAMAINDEX_DOCSTORE_PATH: /opt/airflow/storage/llamaindex_docstore
   volumes:
     - ./dags:/opt/airflow/dags
     - ./src:/opt/airflow/src
     - ./logs:/opt/airflow/logs
     - ${DOCS_PATH:-./data/docs}:/opt/airflow/data/docs:ro
+    - ./storage:/opt/airflow/storage
   depends_on:
     postgres:
       condition: service_healthy
@@ -47,7 +55,7 @@ x-airflow-common: &airflow-common
 services:
   # ── Weaviate ───────────────────────────────────────────────────────────────
   weaviate:
-    image: semitechnologies/weaviate:1.24.1
+    image: semitechnologies/weaviate:1.27.4
     container_name: weaviate
     restart: unless-stopped
     ports:

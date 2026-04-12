@@ -12,3 +12,4 @@ postgres_data/
 dist/
 .DS_Store
 volumes/
+*storage/

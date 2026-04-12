@@ -39,6 +39,7 @@ def run_ingestion_pipeline(
     config: Optional[Config] = None,
     recreate_collection: bool = False,
     use_smart: bool = False,
+    engine: str = "llamaindex",
 ) -> dict:
     """
     Run the end-to-end ingestion pipeline.
@@ -47,9 +48,11 @@ def run_ingestion_pipeline(
         docs_path:           Override the docs directory from config.
         config:              Config object; uses defaults from env if None.
         recreate_collection: Drop & recreate the target collection before ingest.
-        use_smart:           If True, use the parent-child smart chunker and
-                             store into SecDocumentSmart.  If False (default),
-                             use the basic token chunker and store into SecDocument.
+        use_smart:           If True, use the parent-child smart chunker.
+        engine:              "custom" (default) – custom chunker + Weaviate client.
+                             "llamaindex"       – LlamaIndex SimpleDirectoryReader
+                               + SentenceSplitter / HierarchicalNodeParser
+                               + WeaviateVectorStore.
 
     Returns:
         Summary dict with counts for each stage.
@@ -58,6 +61,15 @@ def run_ingestion_pipeline(
         config = Config()
     if docs_path is not None:
         config.docs_path = Path(docs_path)
+
+    if engine == "llamaindex":
+        from src.ingestion.llamaindex_pipeline import run_llamaindex_pipeline
+        return run_llamaindex_pipeline(
+            docs_path=config.docs_path,
+            config=config,
+            use_smart=use_smart,
+            recreate_collection=recreate_collection,
+        )
 
     mode = "smart (parent-child)" if use_smart else "basic (token)"
     collection = (

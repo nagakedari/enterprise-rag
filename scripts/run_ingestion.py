@@ -3,14 +3,17 @@
 Run the SEC 10-Q ingestion pipeline directly — no Airflow required.
 
 Usage:
-    # Use defaults from .env
+    # Use defaults from .env  (custom engine, basic chunking)
     python scripts/run_ingestion.py
+
+    # LlamaIndex engine with smart (parent-child) chunking
+    python scripts/run_ingestion.py --engine llamaindex --use-smart
+
+    # Custom engine with smart chunking, clean re-ingest
+    python scripts/run_ingestion.py --use-smart --recreate
 
     # Override docs path
     python scripts/run_ingestion.py --docs-path /path/to/pdfs
-
-    # Drop and recreate the Weaviate collection first (clean re-ingest)
-    python scripts/run_ingestion.py --recreate
 """
 import argparse
 import logging
@@ -46,12 +49,25 @@ def main() -> None:
         action="store_true",
         help="Drop and recreate the Weaviate collection before ingestion",
     )
+    parser.add_argument(
+        "--engine",
+        choices=["custom", "llamaindex"],
+        default="custom",
+        help="Ingestion engine: 'custom' (default) or 'llamaindex'",
+    )
+    parser.add_argument(
+        "--use-smart",
+        action="store_true",
+        help="Use parent-child smart chunker (SecDocumentSmart collection)",
+    )
     args = parser.parse_args()
 
     from src.ingestion.pipeline import run_ingestion_pipeline
 
     result = run_ingestion_pipeline(
         docs_path=args.docs_path,
+        engine=args.engine,
+        use_smart=args.use_smart,
         recreate_collection=args.recreate,
     )
 
