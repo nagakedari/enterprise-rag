@@ -51,3 +51,29 @@ langchain-text-splitters==0.2.4
 ragas==0.2.6
 datasets==2.21.0
 numpy==1.26.4
+
+# ── ONNX inference (fastembed) ────────────────────────────────────────────────
+# fastembed wraps ONNX Runtime for 3-5x faster CPU inference vs PyTorch.
+# Used as an optional backend for BGE-M3 embeddings (set USE_ONNX=false to fall back).
+fastembed==0.4.1
+
+# ── ONNX inference ────────────────────────────────────────────────────────────
+# onnxruntime is used by _OnnxBgeEmbeddings in semantic_chunker.py.
+# On first use the BGE-M3 model is exported to ~/.cache/bge_onnx/ via
+# torch.onnx.export (one-time ~2 min); subsequent runs load from the ONNX cache
+# and run via onnxruntime, giving ~1.4x faster CPU inference vs PyTorch.
+onnxruntime==1.23.2
+
+# ── Semantic chunking (Phase 3) ───────────────────────────────────────────────
+# SemanticChunker lives in langchain_experimental.text_splitter
+# HuggingFaceEmbeddings for BGE-M3 is in langchain_huggingface
+# sentence-transformers is the underlying runtime for loading BGE-M3
+# All three require langchain-core>=0.2.0,<0.3.0 — compatible with the pin above.
+langchain-experimental==0.0.65
+langchain-huggingface==0.0.3
+sentence-transformers==3.0.1
+# transformers is pinned to <4.50 because 4.50+ enforces torch>=2.6 for all .bin
+# weight loading (CVE-2025-32434).  PyTorch 2.3+ dropped macOS x86_64 support so
+# torch cannot be upgraded on Intel Macs; 4.47.x is the latest compatible release.
+# sentence-transformers 3.0.1 requires transformers>=4.34.0,<5 — 4.47.0 satisfies that.
+transformers==4.47.0

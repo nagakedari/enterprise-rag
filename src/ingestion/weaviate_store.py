@@ -31,6 +31,7 @@ from weaviate.classes.config import Configure, DataType, Property, VectorDistanc
 from src.config import WeaviateConfig
 from src.ingestion.chunker import TextChunk
 from src.ingestion.smart_chunker import SmartTextChunk
+from src.ingestion.semantic_chunker import SemanticTextChunk
 
 logger = logging.getLogger(__name__)
 
@@ -283,5 +284,135 @@ def store_smart_chunks(
 def get_total_count_smart(client: weaviate.WeaviateClient, config: WeaviateConfig) -> int:
     """Return total number of objects in the SecDocumentSmart collection."""
     collection = client.collections.get(config.smart_collection_name)
+    result = collection.aggregate.over_all(total_count=True)
+    return result.total_count
+
+
+# ── DocumentChunk – semantic chunking schema, ingestion, verification ─────────
+
+def ensure_schema_semantic(client: weaviate.WeaviateClient, config: WeaviateConfig) -> None:
+    """
+    Create the DocumentChunk collection for semantic chunking.
+
+    Schema highlights vs SecDocumentSmart:
+        text_for_search  – title-prefixed + overlap text; BM25-indexed AND vectorized
+                           (embeddings computed externally with BGE-M3 and pushed)
+        raw_content      – clean chunk text returned to the LLM; stored only
+        content_hash     – SHA256 of raw_content; used as dedup key for UUIDs
+        section_title    – stored for filtering but not BM25-indexed (already
+                           embedded in text_for_search)
+    """
+    if client.collections.exists(config.semantic_collection_name):
+        logger.info(
+            "Collection '%s' already exists – skipping creation.",
+            config.semantic_collection_name,
+        )
+        return
+
+    client.collections.create(
+        name=config.semantic_collection_name,
+        description=(
+            "SEC 10-Q semantic chunks. "
+            "Vector = BGE-M3 embedding of text_for_search; raw_content returned to LLM."
+        ),
+        vectorizer_config=Configure.Vectorizer.none(),
+        vector_index_config=Configure.VectorIndex.hnsw(
+            distance_metric=VectorDistances.COSINE,
+        ),
+        properties=[
+            # Metadata fields – filterable but not BM25-searched
+            Property(name="company",           data_type=DataType.TEXT, index_searchable=False),
+            Property(name="quarter",           data_type=DataType.TEXT, index_searchable=False),
+            Property(name="year",              data_type=DataType.INT),
+            Property(name="file_name",         data_type=DataType.TEXT, index_searchable=False),
+            Property(name="source_file",       data_type=DataType.TEXT, index_searchable=False),
+            Property(name="chunk_index",       data_type=DataType.INT),
+            Property(name="page_num",          data_type=DataType.INT),
+            Property(name="token_count",       data_type=DataType.INT),
+            Property(name="section_title",     data_type=DataType.TEXT, index_searchable=False),
+            Property(name="content_hash",      data_type=DataType.TEXT, index_searchable=False),
+            Property(name="last_updated_date", data_type=DataType.TEXT, index_searchable=False),
+            # raw_content: LLM display only — not BM25, not vectorized
+            Property(
+                name="raw_content",
+                data_type=DataType.TEXT,
+                index_searchable=False,
+            ),
+            # text_for_search: title-prefixed + overlap — BM25-indexed for hybrid search
+            Property(
+                name="text_for_search",
+                data_type=DataType.TEXT,
+                index_searchable=True,
+                tokenization=Tokenization.WORD,
+            ),
+        ],
+    )
+    logger.info("Created collection '%s'.", config.semantic_collection_name)
+
+
+def drop_collection_semantic(client: weaviate.WeaviateClient, config: WeaviateConfig) -> None:
+    """Drop the DocumentChunk collection (useful for clean re-ingest)."""
+    if client.collections.exists(config.semantic_collection_name):
+        client.collections.delete(config.semantic_collection_name)
+        logger.info("Dropped collection '%s'.", config.semantic_collection_name)
+
+
+def _semantic_chunk_uuid(chunk: SemanticTextChunk) -> str:
+    """Deterministic UUID based on content_hash for content-level deduplication."""
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"semantic::{chunk.content_hash}"))
+
+
+def store_semantic_chunks(
+    client: weaviate.WeaviateClient,
+    chunks: List[SemanticTextChunk],
+    embeddings: List[List[float]],
+    config: WeaviateConfig,
+) -> int:
+    """
+    Batch-insert semantic chunks with their BGE-M3 embedding vectors.
+
+    Note: *embeddings* must be computed from chunk.text_for_search strings
+    (not raw_content) so that the stored vector matches the BM25-indexed field.
+    """
+    if len(chunks) != len(embeddings):
+        raise ValueError(
+            f"Mismatch: {len(chunks)} chunks vs {len(embeddings)} embeddings"
+        )
+
+    collection = client.collections.get(config.semantic_collection_name)
+    stored = 0
+
+    with collection.batch.fixed_size(batch_size=config.batch_size) as batch:
+        for chunk, vector in zip(chunks, embeddings):
+            batch.add_object(
+                properties={
+                    "company":           chunk.company,
+                    "quarter":           chunk.quarter,
+                    "year":              chunk.year,
+                    "file_name":         chunk.file_name,
+                    "source_file":       chunk.source_file,
+                    "chunk_index":       chunk.chunk_index,
+                    "text_for_search":   chunk.text_for_search,
+                    "raw_content":       chunk.raw_content,
+                    "content_hash":      chunk.content_hash,
+                    "section_title":     chunk.section_title,
+                    "page_num":          chunk.page_num,
+                    "token_count":       chunk.token_count,
+                    "last_updated_date": chunk.last_updated_date,
+                },
+                vector=vector,
+                uuid=_semantic_chunk_uuid(chunk),
+            )
+            stored += 1
+
+    logger.info(
+        "Queued %d objects for insertion into '%s'.", stored, config.semantic_collection_name
+    )
+    return stored
+
+
+def get_total_count_semantic(client: weaviate.WeaviateClient, config: WeaviateConfig) -> int:
+    """Return total number of objects in the DocumentChunk collection."""
+    collection = client.collections.get(config.semantic_collection_name)
     result = collection.aggregate.over_all(total_count=True)
     return result.total_count

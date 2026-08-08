@@ -21,6 +21,7 @@ Non-LLM evaluation metrics derived from golden Q&A pairs.
 """
 import logging
 import re
+from collections import Counter
 from typing import List
 
 import numpy as np
@@ -48,21 +49,28 @@ def exactness(generated: str, golden: str) -> float:
     """
     Token-level F1 between *generated* and *golden* answer.
 
-    Returns a float in [0, 1].  A value of 1.0 means the two answers share
-    exactly the same vocabulary; 0.0 means no token overlap at all.
+    Uses bag-of-words (Counter) token overlap — the standard SQuAD F1 approach.
+    Unlike set-based F1, repeated tokens count proportionally, so an answer that
+    mentions "revenue" five times and one that mentions it once are distinguished.
+
+    Returns a float in [0, 1].
     """
-    gen_tokens = set(_tokenize(generated))
-    gold_tokens = set(_tokenize(golden))
+    gen_counts = Counter(_tokenize(generated))
+    gold_counts = Counter(_tokenize(golden))
 
-    if not gen_tokens or not gold_tokens:
+    if not gen_counts or not gold_counts:
         return 0.0
 
-    common = gen_tokens & gold_tokens
-    if not common:
+    # Intersection: for each token, take the min count in both answers
+    num_common = sum(
+        min(gen_counts[tok], gold_counts[tok]) for tok in gen_counts if tok in gold_counts
+    )
+
+    if num_common == 0:
         return 0.0
 
-    precision = len(common) / len(gen_tokens)
-    recall = len(common) / len(gold_tokens)
+    precision = num_common / sum(gen_counts.values())
+    recall = num_common / sum(gold_counts.values())
     f1 = 2 * precision * recall / (precision + recall)
     return round(float(f1), 4)
 
