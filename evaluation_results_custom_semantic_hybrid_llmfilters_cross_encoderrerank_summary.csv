@@ -1,0 +1,13 @@
+metric,mean,std,min,max,avg_pct,flagged_count,total,flagged_pct,threshold,note
+exactness,0.3321,0.2524,0.0513,0.8627,,,,,,
+answer_similarity,0.5783,0.3444,0.1321,0.9243,,,,,,
+correctness,0.3588,0.21,0.1725,0.8447,,,,,,
+context_precision,0.1973,0.2305,0.0,0.7,,,,,,
+context_recall,0.3194,0.224,0.0,0.5,,,,,,
+context_relevance,0.45,0.3146,0.0,1.0,,,,,,
+faithfulness,0.4444,0.4006,0.0,0.7778,,,,,,
+hallucination_rate,0.5556,0.4006,0.2222,1.0,,,,,,
+answer_relevance,0.5621,0.4689,0.0,0.9751,,,,,,
+factual_error_rate,0.5,0.4449,0.0,1.0,,,,,,
+hallucination_rate,0.5556,,,,55.56,3.0,25.0,12.0,0.2,1 – faithfulness (context-grounded); lower is better
+factual_error_rate,0.5,,,,50.0,16.0,25.0,64.0,0.2,GEval claim audit vs golden answer; lower is better

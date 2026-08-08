@@ -16,11 +16,40 @@ class ChatRequest(BaseModel):
         default="custom",
         description="Retrieval engine: 'custom' (direct Weaviate client) or 'llamaindex'",
     )
+    chunking_strategy: Optional[str] = Field(
+        default=None,
+        description=(
+            "Which ingested collection to query: "
+            "'basic' → SecDocument, "
+            "'parent_child' → SecDocumentSmart, "
+            "'semantic' → DocumentChunk (BGE-M3). "
+            "When null, falls back to use_smart for compatibility."
+        ),
+    )
     use_smart: bool = Field(
         default=False,
         description=(
-            "False → basic collection (SecDocument / SecDocumentLI). "
-            "True  → parent-child collection (SecDocumentSmart / SecDocumentSmartLI)."
+            "Legacy flag. True maps to chunking_strategy='parent_child'. "
+            "Ignored when chunking_strategy is provided."
+        ),
+    )
+    # Optional re-ranking after initial retrieval (None = disabled)
+    rerank_mode: Optional[str] = Field(
+        default=None,
+        description=(
+            "Re-rank over-fetched candidates before generation. "
+            "'llm': one gpt-4o-mini call ranks all candidates. "
+            "'cross_encoder': local sentence-transformers (no API cost). "
+            "null/omit to skip re-ranking."
+        ),
+    )
+    # Filter extraction mode when company/year/quarter are not passed explicitly
+    filter_mode: str = Field(
+        default="llm",
+        description=(
+            "'llm' (default): extract company/year/quarter from query text via LLM. "
+            "'regex': rule-based extraction, no LLM cost. "
+            "Ignored if company/year/quarter are provided explicitly."
         ),
     )
     # Per-request retrieval mode override (falls back to RETRIEVAL_MODE env var)

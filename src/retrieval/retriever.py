@@ -16,25 +16,30 @@ Retrieval modes (config.retrieval.mode / RETRIEVAL_MODE env var):
         Best for queries with exact financial terms, ticker symbols, or
         specific numbers that benefit from keyword matching.
 
-BM25 targets only content fields (chunk_text / parent_text + section_title).
-Metadata fields (company, quarter, source_file …) are excluded from BM25
-to avoid spurious matches.
+BM25 targets only content fields — metadata fields are excluded to avoid
+spurious matches.  The content field differs by collection:
+    SecDocument      → "chunk_text"
+    SecDocumentSmart → "parent_text", "section_title"
+    DocumentChunk    → "text_for_search"  (title-prefixed + overlap)
 
-Supports two collections (collection_name parameter):
+Supports three collections (collection_name parameter):
     SecDocument       – Phase-1 basic chunking; returns chunk_text
     SecDocumentSmart  – Phase-2 parent-child; returns parent_text,
                         deduplicates by parent_id
+    DocumentChunk     – Phase-3 semantic chunking; returns raw_content,
+                        embeds query with BGE-M3 (same model used at ingest)
 
 Usage:
-    # Semantic, basic collection
+    # Semantic mode, basic collection
     chunks = retrieve("Apple revenue", config)
 
-    # Hybrid, smart collection
+    # Hybrid mode, parent-child collection
     chunks = retrieve("Apple revenue", config,
                       collection_name=config.weaviate.smart_collection_name)
 
-    # Override mode / alpha per call
-    chunks = retrieve("Apple revenue", config, mode="hybrid", alpha=0.3)
+    # Hybrid mode, semantic collection (uses BGE-M3 for query embedding)
+    chunks = retrieve("Apple revenue", config,
+                      collection_name=config.weaviate.semantic_collection_name)
 """
 import logging
 from dataclasses import dataclass, field
@@ -109,38 +114,59 @@ def _build_filters(
     return result
 
 
-def _map_object(obj, is_smart: bool, distance: float, search_score: float) -> RetrievedChunk:
+def _map_object(
+    obj,
+    is_smart: bool,
+    is_semantic: bool,
+    distance: float,
+    search_score: float,
+) -> RetrievedChunk:
     """Map a raw Weaviate result object to a RetrievedChunk."""
     p = obj.properties
+    if is_semantic:
+        text = p.get("raw_content", "")
+        source_file = p.get("file_name", "") or p.get("source_file", "")
+        page = int(p.get("page_num", 0))
+        section_title = p.get("section_title", "")
+    elif is_smart:
+        text = p.get("parent_text", "")
+        source_file = p.get("file_name", "") or p.get("source_file", "")
+        page = int(p.get("page_num", 0))
+        section_title = p.get("section_title", "")
+    else:
+        text = p.get("chunk_text", "")
+        source_file = p.get("source_file", "")
+        page = 0
+        section_title = ""
+
     return RetrievedChunk(
-        text=(p.get("parent_text", "") if is_smart else p.get("chunk_text", "")),
+        text=text,
         company=p.get("company", ""),
         quarter=p.get("quarter", ""),
         year=int(p.get("year", 0)),
-        source_file=(
-            p.get("file_name", "") or p.get("source_file", "")
-            if is_smart else p.get("source_file", "")
-        ),
+        source_file=source_file,
         chunk_index=int(p.get("chunk_index", 0)),
-        page_start=int(p.get("page_num", 0) if is_smart else p.get("page_start", 0)),
-        page_end=int(p.get("page_num", 0) if is_smart else p.get("page_end", 0)),
+        page_start=page if (is_smart or is_semantic) else int(p.get("page_start", 0)),
+        page_end=page if (is_smart or is_semantic) else int(p.get("page_end", 0)),
         token_count=int(p.get("token_count", 0)),
         distance=distance,
         search_score=search_score,
-        section_title=p.get("section_title", "") if is_smart else "",
+        section_title=section_title,
     )
 
 
 def _deduplicate(
     results,
     is_smart: bool,
+    is_semantic: bool,
     top_k: int,
     mode: str,
 ) -> List[RetrievedChunk]:
     """
     Map Weaviate results to RetrievedChunks.
-    For the smart collection, deduplicate by parent_id so each parent
+    For the parent-child collection, deduplicate by parent_id so each parent
     appears at most once, using the best-scoring child hit per parent.
+    Semantic and basic collections have no deduplication step.
     """
     chunks: List[RetrievedChunk] = []
     seen_parent_ids: set = set()
@@ -162,7 +188,7 @@ def _deduplicate(
                 continue
             seen_parent_ids.add(parent_id)
 
-        chunks.append(_map_object(obj, is_smart, distance, search_score))
+        chunks.append(_map_object(obj, is_smart, is_semantic, distance, search_score))
 
         if len(chunks) == top_k:
             break
@@ -206,6 +232,7 @@ def retrieve(
     """
     target_collection = collection_name or config.weaviate.collection_name
     is_smart = target_collection == config.weaviate.smart_collection_name
+    is_semantic = target_collection == config.weaviate.semantic_collection_name
     effective_mode = mode or config.retrieval.mode
     effective_alpha = alpha if alpha is not None else config.retrieval.alpha
 
@@ -218,21 +245,34 @@ def retrieve(
 
     filters = _build_filters(company, year, quarter)
 
-    # Fetch more candidates for smart collection so dedup still yields top_k
+    # Fetch extra candidates for smart collection to compensate for parent dedup
     fetch_limit = top_k * 3 if is_smart else top_k
 
-    # BM25 searches only the content property (not metadata strings)
-    query_properties = (
-        ["parent_text", "section_title"] if is_smart else ["chunk_text"]
-    )
+    # BM25 searches only the dedicated content field for each collection type
+    if is_semantic:
+        query_properties = ["text_for_search"]
+    elif is_smart:
+        query_properties = ["parent_text", "section_title"]
+    else:
+        query_properties = ["chunk_text"]
+
+    # Semantic (DocumentChunk) collection uses BGE-M3 for query embedding to match
+    # the model used at ingest time.  All other collections use OpenAI.
+    if is_semantic:
+        from src.ingestion.semantic_chunker import create_bge_embeddings
+        query_vector = create_bge_embeddings(
+            [query],
+            config.semantic_chunk.embedding_model,
+            config.semantic_chunk.use_onnx,
+        )[0]
+    else:
+        query_vector = create_embeddings([query], config.embedding)[0]
 
     client: weaviate.WeaviateClient = get_client(config.weaviate)
     try:
         collection = client.collections.get(target_collection)
 
         if effective_mode == "hybrid":
-            # Embed query for the vector half of hybrid search
-            query_vector = create_embeddings([query], config.embedding)[0]
             results = collection.query.hybrid(
                 query=query,                      # BM25 leg
                 vector=query_vector,              # semantic leg
@@ -243,8 +283,7 @@ def retrieve(
                 return_metadata=MetadataQuery(score=True),
             )
         else:
-            # Pure semantic
-            query_vector = create_embeddings([query], config.embedding)[0]
+            # Pure vector search
             results = collection.query.near_vector(
                 near_vector=query_vector,
                 limit=fetch_limit,
@@ -254,7 +293,7 @@ def retrieve(
     finally:
         client.close()
 
-    chunks = _deduplicate(results, is_smart, top_k, effective_mode)
+    chunks = _deduplicate(results, is_smart, is_semantic, top_k, effective_mode)
 
     if chunks:
         logger.info(
