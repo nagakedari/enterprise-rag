@@ -51,7 +51,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 load_dotenv()
 
 from src.config import Config
-from src.retrieval.retriever import retrieve
+from src.evaluation.run_tag import build_run_tag, resolve_chunking_strategy
+from src.retrieval.retriever import retrieve, retrieve_per_filing
 from src.retrieval.llamaindex_retriever import retrieve_llamaindex
 from src.retrieval.query_filters import extract_query_filters
 from src.retrieval.reranker import rerank
@@ -101,7 +102,9 @@ def load_qna(
     The CSV columns are expected to be::
         Question, Source Docs, Question Type, Source Chunk Type, Answer
 
-    Returns a sampled DataFrame with at most *n_samples* rows.
+    Returns at most *n_samples* rows.  When the filtered dataset already has
+    <= n_samples rows every row is returned in CSV order (no shuffling).
+    Sampling only happens when the dataset is larger than n_samples.
     """
     df = pd.read_csv(csv_path)
     df.columns = df.columns.str.strip()
@@ -115,7 +118,6 @@ def load_qna(
 
     if company_filter:
         ticker = company_filter.upper()
-        # Source Docs column contains entries like "*AAPL*" or "*AAPL*, *MSFT*"
         source_col = "Source Docs" if "Source Docs" in df.columns else None
         if source_col:
             df = df[df[source_col].str.contains(ticker, na=False, case=False)]
@@ -135,12 +137,18 @@ def load_qna(
             )
         logger.info("Filtered to question type '%s': %d rows.", question_type_filter, len(df))
 
-    if len(df) < n_samples:
-        logger.warning(
-            "Only %d Q&A pairs available (requested %d). Using all.", len(df), n_samples
-        )
+    available = len(df)
+    if available <= n_samples:
+        # All rows fit — return in CSV order, no randomness involved.
+        if available < n_samples:
+            logger.warning(
+                "Only %d Q&A pairs available (requested %d). Using all.", available, n_samples
+            )
+        return df.reset_index(drop=True)
 
-    return df.sample(n=min(n_samples, len(df)), random_state=random_seed).reset_index(drop=True)
+    # Dataset is larger than requested — draw a reproducible random subset.
+    logger.info("Sampling %d of %d Q&A pairs (seed=%d).", n_samples, available, random_seed)
+    return df.sample(n=n_samples, random_state=random_seed).reset_index(drop=True)
 
 
 # ---------------------------------------------------------------------------
@@ -231,20 +239,25 @@ def _retrieve_chunks(
     filter_mode: str = "llm",
     rerank_mode: Optional[str] = None,
     rerank_top_k: Optional[int] = None,
+    diversity_mode: Optional[str] = None,
+    mmr_lambda: float = 0.5,
+    per_filing: bool = False,
+    chunks_per_filing: int = 3,
+    max_per_entity: Optional[int] = None,
 ) -> list:
     """
     Run retrieval (with optional re-ranking) and return raw RetrievedChunk objects.
     Shared by run_rag() (which adds generation) and run_retrieval_only() (debug).
 
-    rerank_top_k controls how many chunks survive re-ranking. When omitted it
-    defaults to config.retrieval.top_k (current behaviour). Setting it lower
-    than top_k lets you over-fetch a wide candidate set for good recall, then
-    aggressively prune noise before generation to improve precision.
+    per_filing: when True and the question has no quarter filter, runs a separate
+    retrieval query per (year, quarter) filing for the company. Guarantees temporal
+    coverage for questions like "How has Apple's net sales changed over time?"
 
-    Example: --top-k 10 --rerank-top-k 3
-        → retrieve 30 candidates (10 × 3 over-fetch)
-        → reranker scores all 30 / 10 parents
-        → return only top 3 to the LLM  (high precision, low hallucination)
+    diversity_mode replaces the final "sort → top_k" step inside the reranker:
+        "none"           – plain top-k sort (default)
+        "mmr"            – Maximal Marginal Relevance (relevance + diversity)
+        "metadata_slots" – guaranteed per-(company, quarter, year) slot coverage
+        "source_cap"     – per-entity upper-bound cap (ceil(top_k / n_entities))
     """
     filters = extract_query_filters(
         question=question,
@@ -257,6 +270,15 @@ def _retrieve_chunks(
     final_k = rerank_top_k if (rerank_mode and rerank_top_k is not None) else config.retrieval.top_k
     fetch_k = config.retrieval.top_k * 3 if rerank_mode else config.retrieval.top_k
 
+    # Per-filing retrieval: triggered when question has a company but no quarter
+    # (temporal question). Not supported for llamaindex engine.
+    should_per_filing = (
+        per_filing
+        and filters.get("quarter") is None
+        and filters.get("company") is not None
+        and engine != "llamaindex"
+    )
+
     if engine == "llamaindex":
         chunks = retrieve_llamaindex(
             query=question,
@@ -267,6 +289,23 @@ def _retrieve_chunks(
             alpha=retrieval_alpha,
             **filters,
         )
+    elif should_per_filing:
+        if chunking_strategy == "semantic":
+            collection_name = config.weaviate.semantic_collection_name
+        elif chunking_strategy == "parent_child":
+            collection_name = config.weaviate.smart_collection_name
+        else:
+            collection_name = config.weaviate.collection_name
+        chunks = retrieve_per_filing(
+            query=question,
+            config=config,
+            company=filters["company"],
+            chunks_per_filing=chunks_per_filing,
+            collection_name=collection_name,
+            mode=retrieval_mode,
+            alpha=retrieval_alpha,
+        )
+        logger.info("Per-filing retrieval returned %d chunks", len(chunks))
     else:
         if chunking_strategy == "semantic":
             collection_name = config.weaviate.semantic_collection_name
@@ -290,6 +329,9 @@ def _retrieve_chunks(
             chunks=chunks,
             top_k=final_k,
             mode=rerank_mode,
+            diversity_mode=diversity_mode or "none",
+            mmr_lambda=mmr_lambda,
+            max_per_entity=max_per_entity,
             api_key=config.generation.api_key,
             model=config.generation.model,
         )
@@ -308,6 +350,11 @@ def run_rag(
     filter_mode: str = "llm",
     rerank_mode: Optional[str] = None,
     rerank_top_k: Optional[int] = None,
+    diversity_mode: Optional[str] = None,
+    mmr_lambda: float = 0.5,
+    per_filing: bool = False,
+    chunks_per_filing: int = 3,
+    max_per_entity: Optional[int] = None,
 ) -> tuple[str, list[str]]:
     """
     Execute the full RAG pipeline for a single *question*.
@@ -321,6 +368,7 @@ def run_rag(
     chunks = _retrieve_chunks(
         question, config, engine, chunking_strategy,
         retrieval_mode, retrieval_alpha, filter_mode, rerank_mode, rerank_top_k,
+        diversity_mode, mmr_lambda, per_filing, chunks_per_filing, max_per_entity,
     )
     generated_answer = generate(
         query=question,
@@ -340,6 +388,11 @@ def run_retrieval_only(
     filter_mode: str = "llm",
     rerank_mode: Optional[str] = None,
     rerank_top_k: Optional[int] = None,
+    diversity_mode: Optional[str] = None,
+    mmr_lambda: float = 0.5,
+    per_filing: bool = False,
+    chunks_per_filing: int = 3,
+    max_per_entity: Optional[int] = None,
 ) -> list:
     """
     Run retrieval only — no generation, no LLM generation cost.
@@ -349,6 +402,7 @@ def run_retrieval_only(
     return _retrieve_chunks(
         question, config, engine, chunking_strategy,
         retrieval_mode, retrieval_alpha, filter_mode, rerank_mode, rerank_top_k,
+        diversity_mode, mmr_lambda, per_filing, chunks_per_filing, max_per_entity,
     )
 
 
@@ -407,6 +461,11 @@ def run_debug_mode(
                 filter_mode=args.filter_mode,
                 rerank_mode=args.rerank_mode,
                 rerank_top_k=args.rerank_top_k,
+                diversity_mode=args.diversity_mode,
+                mmr_lambda=args.mmr_lambda,
+                per_filing=args.per_filing,
+                chunks_per_filing=args.chunks_per_filing,
+                max_per_entity=args.max_per_entity,
             )
         except Exception as exc:
             logger.warning("Retrieval failed for row %s: %s", idx, exc, exc_info=True)
@@ -660,6 +719,73 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--diversity-mode",
+        type=str,
+        default="none",
+        choices=["none", "mmr", "metadata_slots", "source_cap"],
+        dest="diversity_mode",
+        help=(
+            "Final chunk selection strategy after scoring — replaces the plain "
+            "top-k sort inside the reranker. Requires --rerank-mode to be set. "
+            "'none' (default): sort by score, take top --rerank-top-k. "
+            "'mmr': Maximal Marginal Relevance — iteratively picks chunks that are "
+            "relevant to the query AND dissimilar to already-chosen chunks. Reduces "
+            "redundant table rows; improves coverage for multi-chunk questions. "
+            "Requires scikit-learn (pip install scikit-learn). "
+            "'metadata_slots': guarantees proportional slot coverage per "
+            "(company, quarter, year) entity in the candidate pool. Prevents the "
+            "reranker from filling all slots with one quarter on Multi-Doc questions."
+        ),
+    )
+    parser.add_argument(
+        "--mmr-lambda",
+        type=float,
+        default=0.5,
+        dest="mmr_lambda",
+        help=(
+            "MMR relevance/diversity trade-off (only used with --diversity-mode mmr). "
+            "1.0 = pure relevance (same as top-k sort). "
+            "0.0 = pure diversity (ignores relevance scores). "
+            "Default: 0.5 (equal balance). "
+            "Try 0.7 to bias toward relevance while still penalising redundant chunks."
+        ),
+    )
+    parser.add_argument(
+        "--per-filing",
+        action="store_true",
+        default=False,
+        dest="per_filing",
+        help=(
+            "Run one retrieval query per (year, quarter) filing for the company "
+            "when the question has no quarter filter. Guarantees temporal coverage "
+            "for questions like 'How has Apple's net sales changed over time?' "
+            "Ignored when a quarter is extracted from the question or when "
+            "--engine=llamaindex."
+        ),
+    )
+    parser.add_argument(
+        "--chunks-per-filing",
+        type=int,
+        default=3,
+        dest="chunks_per_filing",
+        help=(
+            "Number of chunks to fetch per (year, quarter) filing when --per-filing "
+            "is active (default: 3). The total candidate pool is "
+            "n_filings × chunks_per_filing before reranking."
+        ),
+    )
+    parser.add_argument(
+        "--max-per-entity",
+        type=int,
+        default=None,
+        dest="max_per_entity",
+        help=(
+            "Override for the source_cap per-(company, quarter, year) slot cap "
+            "(only used with --diversity-mode source_cap). "
+            "Default: ceil(top_k / n_entities), minimum 2."
+        ),
+    )
+    parser.add_argument(
         "--metrics",
         type=str,
         default=None,
@@ -711,16 +837,29 @@ def main() -> None:
         logger.info("top_k overridden to %d via --top-k", args.top_k)
 
     # Resolve effective strategy for run tag and pipeline calls
-    chunking_strategy = args.chunking_strategy or ("parent_child" if args.use_smart else "basic")
+    chunking_strategy = resolve_chunking_strategy(args.chunking_strategy, args.use_smart)
 
     # Build a run tag for output filenames so different configs don't overwrite each other
     # e.g. "custom_semantic_hybrid_a0.5_regexfilters_cross_encoderrerank"
     mode_tag = args.retrieval_mode or config.retrieval.mode
-    alpha_tag = f"_a{args.alpha}" if args.alpha is not None else ""
-    topk_tag = f"_k{args.top_k}" if args.top_k is not None else ""
-    rerank_tag = f"_{args.rerank_mode}rerank" if args.rerank_mode else ""
-    rerank_topk_tag = f"_rt{args.rerank_top_k}" if (args.rerank_mode and args.rerank_top_k is not None) else ""
-    run_tag = f"{args.engine}_{chunking_strategy}_{mode_tag}{alpha_tag}{topk_tag}_{args.filter_mode}filters{rerank_tag}{rerank_topk_tag}"
+    run_tag = build_run_tag(
+        engine=args.engine,
+        chunking_strategy=chunking_strategy,
+        filter_mode=args.filter_mode,
+        config_retrieval_mode=config.retrieval.mode,
+        retrieval_mode=args.retrieval_mode,
+        alpha=args.alpha,
+        top_k=args.top_k,
+        rerank_mode=args.rerank_mode,
+        rerank_top_k=args.rerank_top_k,
+        diversity_mode=args.diversity_mode,
+        mmr_lambda=args.mmr_lambda,
+        per_filing=args.per_filing,
+        chunks_per_filing=args.chunks_per_filing,
+        max_per_entity=args.max_per_entity,
+        question_type=args.question_type,
+        seed=args.seed,
+    )
 
     logger.info(
         "Evaluation config: engine=%s  chunking_strategy=%s  mode=%s  alpha=%s",
@@ -735,10 +874,13 @@ def main() -> None:
 
     n_samples = args.debug_limit if args.debug else args.samples
     logger.info(
-        "Loading up to %d Q&A pairs from %s (company=%s) ...",
+        "Input file : %s", qna_csv
+    )
+    logger.info(
+        "Loading up to %d Q&A pairs (company=%s, question_type=%s) ...",
         n_samples,
-        qna_csv,
         args.company or "ALL",
+        args.question_type or "ALL",
     )
     qna_df = load_qna(
         qna_csv,
@@ -785,6 +927,11 @@ def main() -> None:
                 filter_mode=args.filter_mode,
                 rerank_mode=args.rerank_mode,
                 rerank_top_k=args.rerank_top_k,
+                diversity_mode=args.diversity_mode,
+                mmr_lambda=args.mmr_lambda,
+                per_filing=args.per_filing,
+                chunks_per_filing=args.chunks_per_filing,
+                max_per_entity=args.max_per_entity,
             )
         except Exception as exc:
             logger.warning("RAG pipeline failed for row %s: %s", idx, exc, exc_info=True)
@@ -861,11 +1008,20 @@ def main() -> None:
         .reset_index()
     )
     hal_summary = build_hallucination_summary(results_df)
-    # Append hallucination rows with NaN for std/min/max columns they don't have
     hal_rows = hal_summary.rename(columns={"avg_score": "mean"})[
         ["metric", "mean", "avg_pct", "flagged_count", "total", "flagged_pct", "threshold", "note"]
     ]
     agg = pd.concat([agg, hal_rows], ignore_index=True)
+    # Stamp the input file and run config into the summary so every result CSV
+    # is self-documenting — prevents the "which file did this run use?" ambiguity.
+    meta = pd.DataFrame([{
+        "metric": "_meta_input_file",   "mean": str(qna_csv),
+    }, {
+        "metric": "_meta_run_tag",      "mean": run_tag,
+    }, {
+        "metric": "_meta_n_questions",  "mean": len(results_df),
+    }])
+    agg = pd.concat([agg, meta], ignore_index=True)
     agg.to_csv(summary_path, index=False)
     logger.info("Aggregated summary saved to %s", summary_path)
 

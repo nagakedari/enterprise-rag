@@ -196,6 +196,151 @@ def _deduplicate(
     return chunks
 
 
+# ── Per-filing retrieval helpers ──────────────────────────────────────────────
+
+def _discover_filings(
+    collection,
+    company: str,
+) -> List[tuple]:
+    """
+    Return the distinct (year, quarter) pairs stored for *company*.
+
+    Uses fetch_objects with a company filter to avoid a full table scan.
+    The limit of 500 is safely above the number of filings we expect
+    (quarterly filings since ~2020 = ~20 per company).
+    """
+    company_filter = Filter.by_property("company").equal(company)
+    results = collection.query.fetch_objects(
+        filters=company_filter,
+        limit=500,
+        return_properties=["year", "quarter"],
+    )
+    seen: set = set()
+    filings: List[tuple] = []
+    for obj in results.objects:
+        p = obj.properties
+        key = (int(p.get("year", 0)), p.get("quarter", ""))
+        if key not in seen and key[0] > 0:
+            seen.add(key)
+            filings.append(key)
+    filings.sort()
+    logger.info("Discovered %d filings for %s: %s", len(filings), company, filings)
+    return filings
+
+
+def retrieve_per_filing(
+    query: str,
+    config: Config,
+    company: str,
+    chunks_per_filing: int = 3,
+    collection_name: Optional[str] = None,
+    mode: Optional[str] = None,
+    alpha: Optional[float] = None,
+) -> List[RetrievedChunk]:
+    """
+    Run one retrieval query per (year, quarter) filing for *company*, then
+    merge and deduplicate the results.
+
+    Use this when the question does not specify a quarter and the answer
+    requires facts from multiple filings (e.g. "How has Apple's net sales
+    changed over time?").  A single global query with quarter=null tends to
+    return N chunks from one filing; per-filing retrieval guarantees temporal
+    coverage.
+
+    Args:
+        query:              Natural-language question.
+        config:             Project-wide Config.
+        company:            Ticker symbol (e.g. "AAPL").
+        chunks_per_filing:  How many chunks to fetch per (year, quarter) pair.
+        collection_name:    Weaviate collection override.
+        mode:               "semantic" or "hybrid".
+        alpha:              Hybrid alpha (0–1).
+
+    Returns:
+        Merged, deduplicated list of RetrievedChunks, best-first within each
+        filing.  Ordering across filings follows (year, quarter) ascending
+        so temporal ordering is preserved for the reranker.
+    """
+    target_collection = collection_name or config.weaviate.collection_name
+    is_smart = target_collection == config.weaviate.smart_collection_name
+    is_semantic = target_collection == config.weaviate.semantic_collection_name
+    effective_mode = mode or config.retrieval.mode
+    effective_alpha = alpha if alpha is not None else config.retrieval.alpha
+
+    if is_semantic:
+        from src.ingestion.semantic_chunker import create_bge_embeddings
+        query_vector = create_bge_embeddings(
+            [query],
+            config.semantic_chunk.embedding_model,
+            config.semantic_chunk.use_onnx,
+        )[0]
+    else:
+        query_vector = create_embeddings([query], config.embedding)[0]
+
+    if is_semantic:
+        query_properties = ["text_for_search"]
+    elif is_smart:
+        query_properties = ["parent_text", "section_title"]
+    else:
+        query_properties = ["chunk_text"]
+
+    client: weaviate.WeaviateClient = get_client(config.weaviate)
+    try:
+        collection = client.collections.get(target_collection)
+        filings = _discover_filings(collection, company)
+
+        if not filings:
+            logger.warning("No filings found for %s — falling back to global retrieve.", company)
+            client.close()
+            return retrieve(query, config, top_k=chunks_per_filing * 4,
+                            company=company, collection_name=collection_name,
+                            mode=mode, alpha=alpha)
+
+        all_chunks: List[RetrievedChunk] = []
+        seen_dedup: set = set()
+
+        for year, quarter in filings:
+            f_filter = _build_filters(company, year, quarter)
+            fetch_limit = chunks_per_filing * 3 if is_smart else chunks_per_filing
+            try:
+                if effective_mode == "hybrid":
+                    results = collection.query.hybrid(
+                        query=query,
+                        vector=query_vector,
+                        alpha=effective_alpha,
+                        query_properties=query_properties,
+                        limit=fetch_limit,
+                        filters=f_filter,
+                        return_metadata=MetadataQuery(score=True),
+                    )
+                else:
+                    results = collection.query.near_vector(
+                        near_vector=query_vector,
+                        limit=fetch_limit,
+                        filters=f_filter,
+                        return_metadata=MetadataQuery(distance=True),
+                    )
+            except Exception as exc:
+                logger.warning("Per-filing query failed for %s %s %d: %s", company, quarter, year, exc)
+                continue
+
+            filing_chunks = _deduplicate(results, is_smart, is_semantic, chunks_per_filing, effective_mode)
+            for chunk in filing_chunks:
+                dedup_key = (chunk.source_file, chunk.chunk_index)
+                if dedup_key not in seen_dedup:
+                    seen_dedup.add(dedup_key)
+                    all_chunks.append(chunk)
+
+    finally:
+        client.close()
+
+    logger.info(
+        "Per-filing retrieval: %d filings × %d chunks → %d unique chunks  company=%s",
+        len(filings), chunks_per_filing, len(all_chunks), company,
+    )
+    return all_chunks
+
+
 # ── Public API ────────────────────────────────────────────────────────────────
 
 def retrieve(

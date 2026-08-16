@@ -11,8 +11,16 @@ Run locally:
 import logging
 
 from dotenv import load_dotenv
-from fastapi import FastAPI, HTTPException
 
+# Must run before any local (src.*) import — several modules instantiate a
+# Config() at import time (e.g. src/api/evaluation_service.py), which reads
+# env vars immediately, so .env has to be loaded first.
+load_dotenv()
+
+from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
+from src.api.evaluation_routes import router as evaluation_router
 from src.api.models import ChatRequest, ChatResponse, SourceDocument
 from src.config import Config
 from src.generation.generator import generate
@@ -20,8 +28,6 @@ from src.retrieval.retriever import retrieve
 from src.retrieval.llamaindex_retriever import retrieve_llamaindex
 from src.retrieval.query_filters import extract_query_filters
 from src.retrieval.reranker import rerank
-
-load_dotenv()
 
 logging.basicConfig(
     level=logging.INFO,
@@ -34,6 +40,15 @@ app = FastAPI(
     description="Answer questions over SEC 10-Q filings via vector retrieval + LLM generation.",
     version="1.0.0",
 )
+
+# Vite dev server origins — local dev only.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:5173", "http://127.0.0.1:5173"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+app.include_router(evaluation_router)
 
 # Instantiate config once at startup (reads env vars)
 _config = Config()

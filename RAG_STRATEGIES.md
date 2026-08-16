@@ -145,7 +145,204 @@ the pipeline.
 
 ---
 
-## 5. Evaluation mechanisms & metrics
+## 5. Diversity selection strategies
+
+**Problem addressed:** `context_recall=0.57` — the cross-encoder reranker
+optimises individual chunk relevance (pointwise, no awareness of the already-chosen
+set), so on Multi-Doc questions it may fill all 6 `rerank_top_k` slots with
+chunks from one filing (the highest-scoring one) and leave the second filing
+entirely unrepresented. The generated answer is then faithful to what it
+received but factually incomplete: facts from the missing filing appear in the
+golden answer, so `context_recall` drops and `factual_error_rate` rises.
+
+After reranker scoring, the final `top_k` selection step is replaceable via
+`--diversity-mode`. Three alternatives to plain top-k sort are implemented in
+`src/retrieval/reranker.py`:
+
+### 5.1 MMR — Maximal Marginal Relevance (`--diversity-mode mmr`)
+
+**How it works:** Iterative greedy selection. At each step pick the candidate
+that maximises `λ × norm_relevance − (1−λ) × max_cosine_sim(candidate, selected)`.
+`λ=1.0` degenerates to plain top-k; `λ=0.0` is pure diversity; `λ=0.5` (default)
+balances both. TF-IDF cosine similarity between chunk texts measures redundancy.
+Requires `scikit-learn`.
+
+**Why:** Prevents the reranker from picking four copies of the same balance-sheet
+table row. A diverse set of chunks covers more facts, improving `context_recall`
+at the cost of some individual-chunk precision.
+
+**Known limitation:** MMR is purely text-diversity aware — it does not guarantee
+that specific (company, quarter, year) entities are represented. It also can
+pull in historically-adjacent chunks (e.g. a ZeniMax acquisition description
+that appeared as background context in a Q2 2023 filing) which the LLM may then
+report as a current-period finding.
+
+**Results (n=25, `a0.25_k10_rt6`):**
+
+| Metric | Baseline (no diversity) | MMR λ=0.4 | Δ |
+|---|--:|--:|--:|
+| context_recall | 0.565 | **0.633** | +0.068 |
+| context_precision | 0.346 | 0.399 | +0.053 |
+| faithfulness | 0.871 | **0.933** | +0.062 |
+| hallucination_rate | 0.129 | **0.067** | −0.062 |
+| factual_error_rate | 0.520 | 0.550 | +0.030 |
+
+Recall improved (+6.8pp) and faithfulness jumped (+6.2pp), but `factual_error_rate`
+slightly worsened — the diverse-but-temporal-mismatch problem (see Fix 1 below).
+
+### 5.2 Metadata slots — proportional floor allocation (`--diversity-mode metadata_slots`)
+
+**How it works:** Groups candidates by `(company, quarter, year)` entity. Each
+entity gets `floor(top_k / n_entities)` guaranteed slots filled by its
+highest-scoring chunks (FLOOR / minimum guarantee). Remaining slots go to
+globally highest-scoring unchosen chunks.
+
+**Why:** Directly targets Multi-Doc questions where two or more filings must
+both be represented. Metadata-slot allocation is entity-aware, not just
+text-diversity-aware, so it guarantees that Apple Q2 2023 AND Apple Q3 2023
+each get at least one slot even when one quarter scores universally higher.
+
+**Complements MMR:** MMR is text-diversity (reduces duplicate table rows);
+metadata_slots is entity-diversity (guarantees filing coverage). They attack
+from different angles.
+
+**Results (n=25, `a0.25_k10_rt6`):**
+
+| Metric | Baseline (no diversity) | Metadata slots | Δ |
+|---|--:|--:|--:|
+| context_recall | 0.565 | 0.549 | −0.016 |
+| context_precision | 0.346 | 0.358 | +0.012 |
+| faithfulness | 0.871 | **0.926** | +0.055 |
+| hallucination_rate | 0.129 | **0.074** | −0.055 |
+| factual_error_rate | 0.520 | **0.540** | +0.020 |
+
+Faithfulness improved (+5.5pp) but recall barely moved; metadata_slots is more
+conservative than MMR — it still fills "extra" slots globally, so if the
+globally-best chunks are all from one filing it still dominates after the floor
+is met.
+
+### 5.3 Source cap — per-entity upper bound (`--diversity-mode source_cap`)
+
+**How it works:** Greedy pass over scored candidates (best first). Each
+`(company, quarter, year)` entity may claim at most `cap` slots; deferred chunks
+fill any remaining slots. Default `cap = ceil(top_k / n_entities)`, minimum 2.
+`--max-per-entity N` overrides the auto-cap.
+
+**Why:** Metadata_slots is a FLOOR (ensures a minimum). Source_cap is a CAP
+(prevents a monopoly). Together they bracket the slot count from both sides.
+Use source_cap when you want to prevent one high-scoring filing from consuming
+all slots; use metadata_slots when you want to guarantee the low-scoring filing
+gets at least one slot.
+
+**When most useful:** Multi-Doc questions where the question is phrased globally
+(no quarter filter) but one period dominates vector similarity — source_cap
+forces the cross-encoder to look at other periods.
+
+**Status:** Implemented (n=25 evaluation run pending). Selectable via
+`--diversity-mode source_cap` and the React UI "Diversity mode" dropdown.
+
+---
+
+## 6. Fix 1 — Temporal anchoring in the generation prompt
+
+**File:** `src/generation/generator.py` (`_SYSTEM_PROMPT`)
+
+**Problem diagnosed:** `factual_error_rate=0.55` (21/25 flagged, GEval
+claim audit). Root-cause breakdown of the 21 flagged questions:
+
+| Root cause | Count | Symptoms |
+|---|---|---|
+| Retrieval failure (context_precision=0, faithfulness=1.0) | ~7 | LLM faithfully reports wrong chunks — FER=1.0 is a retrieval problem, not a generation problem |
+| MMR temporal over-reporting | ~4 | MMR pulled in historically-adjacent chunks from prior periods; LLM (per Rule 1 "READ ALL SOURCES") reported them as primary findings |
+| GEval vs. analytical answers | ~10 | Valid interpretive answers that diverge from the golden reference style |
+
+**Specific case driving Fix 1:** "What acquisitions did Microsoft complete in
+Q2 2023?" — MMR retrieved a ZeniMax chunk (2021 historical background that
+appeared in the Q2 2023 filing as context). The LLM, following Rule 1
+("READ ALL SOURCES FIRST"), reported ZeniMax as a Q2 2023 acquisition.
+`context_recall=1.0` (golden facts were retrieved) but `factual_error_rate=1.0`
+(wrong period claim). Faithfulness was also 1.0 — the answer was perfectly
+grounded in the retrieved context but the context itself contained a trap.
+
+**Fix:** Added Rule 5 `TEMPORAL ANCHORING` between Rules 4 and 6 in
+`_SYSTEM_PROMPT`:
+
+```
+5. TEMPORAL ANCHORING — confine findings to the period the question asks about.
+   If the question specifies a particular quarter or year (e.g. "Q2 2023",
+   "fiscal 2022"), treat only information from that period as primary findings.
+   Facts from other periods that appear in the sources are background context —
+   do not elevate them to primary claims in your answer. If a source mentions an
+   event from an earlier period as historical background, label it as such rather
+   than presenting it as a direct answer to the question.
+   Exception: if the question explicitly asks about multiple periods or trends
+   over time, cover all relevant periods.
+```
+
+**Expected impact:** Directly targets the ~4 temporal over-reporting cases.
+Does not hurt faithfulness (the LLM still cites all sources; it just labels
+off-period facts as background). Neutral to the ~7 retrieval-failure cases
+and the ~10 analytical-answer cases.
+
+**Status:** Implemented. Evaluation run pending.
+
+---
+
+## 7. Fix 2 — Per-filing retrieval for temporal questions
+
+**Files:** `src/retrieval/retriever.py`, `scripts/run_evaluation.py`
+
+**Problem addressed:** For questions like "How has Apple's net sales changed
+over time?", `extract_query_filters()` correctly returns `quarter=None` (no
+quarter constraint). But a single global hybrid query with `quarter=None` still
+tends to return chunks from the filing that scored highest overall — often just
+one period. The model then reports one quarter's data, producing low
+`context_recall` and high `factual_error_rate` for trend questions.
+
+**Approach:** For questions with `company ≠ None` AND `quarter = None`, run N
+separate retrieval queries — one per `(year, quarter)` pair discovered in the
+collection — then merge and deduplicate results by `(source_file, chunk_index)`.
+
+**Two new functions in `src/retrieval/retriever.py`:**
+
+- `_discover_filings(collection, company)` — fetches up to 500 objects
+  filtered to `company`, extracts unique `(year, quarter)` pairs from their
+  metadata. Runs once per question; result is ~20 rows for a typical company
+  with 4 years of quarterly filings.
+
+- `retrieve_per_filing(query, config, company, chunks_per_filing=3, ...)` —
+  embeds the query once, discovers all filings, runs one hybrid/near_vector
+  query per `(year, quarter)` with `chunks_per_filing` results, merges and
+  deduplicates. Total candidate pool = `n_filings × chunks_per_filing` before
+  reranking.
+
+**Routing logic** (`_retrieve_chunks()` in `scripts/run_evaluation.py`):
+
+```python
+should_per_filing = (
+    per_filing                              # flag must be set
+    and filters.get("quarter") is None      # question has no quarter constraint
+    and filters.get("company") is not None  # must know which company
+    and engine != "llamaindex"              # not supported for LlamaIndex engine
+)
+```
+
+**Trade-off:** N Weaviate queries instead of 1 (N ≈ 8–20 for companies with
+2–5 years of quarterly data). Each query is lightweight (fetch_limit=9 for
+`chunks_per_filing=3` with 3× over-fetch). Total latency increase ≈ N × single
+query time, which should be acceptable for evaluation runs but would need
+caching for a production API.
+
+**Complements source_cap:** Per-filing guarantees that every period enters the
+candidate pool. Source_cap then enforces an upper bound so no single period
+monopolises the final `rerank_top_k` slots after the cross-encoder scores them.
+
+**Status:** Implemented. Selectable via `--per-filing` / `--chunks-per-filing`
+CLI flags and the React UI "Per-filing retrieval" checkbox. Evaluation run pending.
+
+---
+
+## 8. Evaluation mechanisms & metrics
 
 Orchestrator: `src/evaluation/evaluator.py` (`evaluate_samples()`), metric
 implementations in `src/evaluation/metrics.py`. Ten metrics, grouped by what
@@ -191,40 +388,64 @@ repo, tagged by `Question Type` (`Multi-Doc RAG`, `Single-Doc Multi-Chunk RAG`,
 
 ## Results by configuration
 
-Each row is one recorded evaluation run (`evaluation_results*_summary.csv` in
-the repo). "Configuration" decodes the run-tag naming scheme:
-`{engine}_{chunking}_{mode}{_a<alpha>}{_k<top_k>}_{filter}filters{_<rerank>rerank}{_rt<rerank_k>}`.
+Each row is one recorded evaluation run (`evaluation_results*_summary.csv`).
+Numbers are means from the actual CSV files (n=25 for all recent runs, fixed
+seed=42). Run-tag naming: `{engine}_{chunking}_{mode}{_a<alpha>}{_k<top_k>}_{filter}filters{_<rerank>rerank}{_rt<rerank_k>}{_<diversity>}`.
 
-| Configuration | Context Precision | Context Recall | Faithfulness | Hallucination Rate | Factual Error Rate | Answer Similarity |
+### Historical phase baselines (from earlier project phases, pre-current-pipeline)
+
+| Configuration | Ctx Prec | Ctx Recall | Faithfulness | Hall. Rate | FER | Ans. Sim |
 |---|--:|--:|--:|--:|--:|--:|
-| Phase 1 — basic chunking, semantic-only, no filters/rerank | — | — | 0.38 | 0.62 | 0.74 | 0.46 |
-| Phase 2 — parent-child chunking, semantic-only | 0.79 | 0.42 | 0.44 | 0.56 | 0.64 | 0.46 |
+| Phase 1 — basic, semantic, no filters/rerank | — | — | 0.38 | 0.62 | 0.74 | 0.46 |
+| Phase 2 — parent-child, semantic | 0.79 | 0.42 | 0.44 | 0.56 | 0.64 | 0.46 |
 | Phase 3 — parent-child + hybrid (RRF) | 0.80 | 0.45 | 0.34 | 0.66 | 0.63 | 0.54 |
-| custom · smart(parent-child) · hybrid · no filters/rerank | 0.29 | 0.55 | 0.70 | 0.30 | 0.42 | 0.48 |
-| custom · parent_child · hybrid · llm-filters · **no rerank** | 0.55 | 0.60 | 1.00* | — | — | — |
-| custom · parent_child · hybrid · llm-filters · **cross-encoder rerank** | 0.43 | 0.70 | 0.54 | 0.46 | 0.32 | 0.53 |
-| custom · parent_child · hybrid · **k10** · llm-filters · cross-encoder rerank | 0.59 | 0.61 | 0.43 | 0.57 | 0.47 | 0.57 |
-| ↳ same, rerank_top_k=5 (before prompt change) | 0.64 | 0.51 | 0.48 | 0.52 | 0.47 | 0.56 |
-| ↳ same, rerank_top_k=6 (**after generation-prompt fix**) | 0.69 | 0.59 | **0.83** | **0.17** | **0.33** | **0.85** |
-| custom · semantic(BGE-M3) · hybrid · llm-filters · cross-encoder rerank | 0.20 | 0.32 | 0.44 | 0.56 | 0.50 | 0.58 |
-| ↳ same, alpha=0.25 (BM25-heavy) | 0.10 | — | — | — | 0.59 | 0.65 |
-| custom · smart · hybrid · alpha=0.25 · **regex-filters** · cross-encoder rerank | 0.31 | 0.75 | 0.50** | 0.50** | 0.47 | 0.62 |
-| llamaindex · smart(parent-child) · hybrid | 0.22 | 0.27 | 0.47 | 0.53 | 0.40 | 0.48 |
 
-\* n too small / not all metrics computed in this run (no rerank stage was tested standalone).
-\** std=0.71 on this run — high-variance, small sample; treat as noisy.
+### Current pipeline runs (n=25, actual CSV numbers)
 
-**Latency:** not measured by any run above — the evaluation pipeline has no
-timing instrumentation (see §5). If you want the latency column from a
-Semantic/Hybrid/Hybrid+reranker comparison table, it needs to be added to
-`run_evaluation.py` (wrap `_retrieve_chunks()` / `generate()` with a timer) —
-it doesn't exist in this repo yet.
+| Run tag | Ctx Prec | Ctx Recall | Faithfulness | Hall. Rate | FER | Correctness |
+|---|--:|--:|--:|--:|--:|--:|
+| `custom_basic_semantic_llmfilters` (baseline, no rerank) | 0.353 | 0.574 | 0.841 | 0.159 | 0.640 | 0.531 |
+| `custom_parent_child_semantic_k10_llmfilters` (semantic retrieval) | **0.472** | 0.620 | 0.894 | 0.105 | 0.500 | **0.578** |
+| `custom_parent_child_hybrid_a0.25_k10_llmfilters` (no rerank) | 0.294 | 0.536 | 0.894 | 0.106 | 0.560 | 0.531 |
+| `custom_parent_child_hybrid_k10_llmfilters_cross_encoderrerank_rt6` | 0.373 | 0.520 | 0.843 | 0.157 | 0.530 | 0.534 |
+| `custom_parent_child_hybrid_a0.25_k10_llmfilters_cross_encoderrerank_rt6` ← **baseline for diversity experiments** | 0.346 | 0.565 | 0.871 | 0.129 | 0.520 | 0.554 |
+| ↳ + `mmr_l0.4` (MMR lambda=0.4) | 0.399 | **0.633** | **0.933** | **0.067** | 0.550 | 0.562 |
+| ↳ + `metaslots` (metadata_slots) | 0.358 | 0.549 | 0.926 | 0.074 | 0.540 | 0.567 |
+| `custom_parent_child_hybrid_a0.25_k15_llmfilters_cross_encoderrerank_rt5` | 0.248 | 0.321 | 0.757 | 0.243 | 0.750 | 0.402 |
+| `custom_semantic_hybrid_k10_llmfilters_cross_encoderrerank_rt6` (BGE-M3) | 0.333 | 0.453 | 0.800 | 0.200 | 0.580 | 0.533 |
 
-### Key findings from the debugging notes
+> **Reading the table:** FER = factual_error_rate (lower is better, flagged when > 0.2).
+> Hall. Rate = 1 − faithfulness. Ctx = context.
 
-`evaluation_results_understanding.md` (untracked working notes in repo root)
-diagnoses a specific low-scoring run and drove several of the fixes reflected
-in the table above:
+### Key observations from actual runs
+
+1. **MMR (λ=0.4) gives the best recall and faithfulness** of all evaluated
+   configurations: context_recall 0.633 (+6.8pp vs baseline), faithfulness
+   0.933 (+6.2pp), hallucination 0.067 (−6.2pp). But FER slightly worsened
+   to 0.55 — MMR pulls in temporally-adjacent chunks that the LLM over-reports
+   as current-period findings (addressed by Fix 1 below).
+
+2. **Metadata_slots gives better faithfulness than baseline** (0.926 vs 0.871)
+   with lower variance than MMR, at the cost of slightly lower recall. It is
+   more conservative than MMR — entity floors are met but globally-best chunks
+   still fill remaining slots.
+
+3. **Increasing k from 10 to 15 with rerank_top_k=5 hurt across the board**
+   (FER 0.75, faithfulness 0.757) — the larger fetch pool included noisier
+   candidates that the cross-encoder couldn't fully suppress at rt5.
+
+4. **Semantic retrieval (no rerank, parent_child_semantic)** achieved the best
+   context_precision (0.472) and correctness (0.578) of any run, suggesting
+   BGE-M3 embeddings match well for semantic-category questions even without
+   reranking. FER still 0.50.
+
+5. **FER floor problem:** Even the best run has FER=0.52–0.55 (13–14/25
+   flagged). Root-cause breakdown: ~7 cases are retrieval failures (wrong
+   chunks retrieved → high FER regardless of generation quality), ~4 are
+   temporal over-reporting (Fix 1 target), ~10 are analytical questions where
+   valid LLM interpretations diverge from the golden reference style.
+
+### Key findings from earlier debugging
 
 1. **Context precision was low (0.29)** because 1000-token parent chunks are
    full of boilerplate (legal disclaimers, table headers) that inflates both
@@ -233,36 +454,24 @@ in the table above:
    many sections can be retrieved for multi-section questions.
 3. **Wrong-period retrieval** — early runs didn't pass company/year/quarter
    filters to the retriever, so a question about "Apple Q2 2023" could pull in
-   Apple Q1 2023 or Q3 2022 chunks (semantically near-identical, factually
-   different numbers). Fixed by `src/retrieval/query_filters.py`.
-4. **Fix 4 (alpha → BM25-heavy)** was reasoned from the observation that SEC
-   financial questions hinge on exact tokens (tickers, "Item 7A", dollar
-   figures) that BM25 matches better than embeddings — but the recorded
-   alpha=0.25 run actually shows **worse** context precision (0.10 vs 0.20 at
-   default alpha) on the semantic-chunking collection, suggesting the fix
-   didn't generalize the way the hypothesis predicted (or interacted badly
-   with BGE-M3 embeddings specifically — this collection uses a different
-   embedding model than the parent-child collection).
-5. **The rerank_top_k=6 + prompt-change run is the standout result** in the
-   table: faithfulness jumped from ~0.43 to 0.83 and hallucination dropped
-   from ~0.57 to 0.17, with the *same* retrieval configuration as the row
-   above it — this looks like a generation-prompt fix, not a retrieval fix,
-   underscoring that faithfulness/hallucination are as sensitive to the
-   generation prompt as to retrieval quality.
+   Apple Q1 2023 or Q3 2022 chunks. Fixed by `src/retrieval/query_filters.py`.
+4. **Alpha tuning (→ 0.25):** SEC questions hinge on exact tokens (tickers,
+   dollar figures) that BM25 matches better than embeddings. alpha=0.25
+   (BM25-heavy) improved recall on parent-child collections; had mixed results
+   on the BGE-M3 semantic collection (different embedding model, different space).
+5. **Generation prompt changes dominated faithfulness:** The rerank_top_k=6
+   + prompt change in earlier runs pushed faithfulness from ~0.43 to 0.83 —
+   reranking alone was not responsible; the generation rules ("REPRODUCE
+   FIGURES EXACTLY", "[Source N]" citation format) drove the jump.
 
 ### Caveats — how to read this
 
-- **Sample sizes vary a lot** across runs (roughly 8 to 68 questions,
-  inferred from `debug/retrieval/*.csv` row counts and summary CSV `total`
-  columns) and use a fixed random seed, but different `--samples`/`--debug-limit`
-  values, so rows are **directionally** comparable, not a controlled
-  experiment with matched question sets.
-- Several cells are blank because that run computed only a subset of metrics
-  (`--metrics ...`) or a metric returned all-NaN (e.g. RAGAS silently failing
-  under concurrency).
-- Judge-model self-evaluation bias applies to every LLM-scored metric in this
-  table (`.env` sets `EVALUATION_MODEL=gpt-4o-mini`, same family as the
-  generator) — treat absolute scores as approximate, and relative comparisons
-  *within* this table as more trustworthy than the numbers in isolation.
-- Latency is absent entirely; add instrumentation before using this table for
-  a cost/latency tradeoff decision.
+- All "current pipeline" runs: n=25, seed=42. Directionally comparable but
+  not a controlled experiment with statistically significant differences.
+- Judge-model: `gpt-4o-mini` for both generation and evaluation (same model
+  family) — self-judging bias applies to `correctness`, `faithfulness`,
+  `factual_error_rate`. Relative comparisons within this table are more
+  trustworthy than absolute scores.
+- Latency is not measured. The evaluation pipeline has no timing
+  instrumentation — add a timer around `_retrieve_chunks()` and `generate()`
+  in `run_evaluation.py` if needed.

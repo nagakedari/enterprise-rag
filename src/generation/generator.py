@@ -56,23 +56,39 @@ STRICT RULES — follow every rule for every answer:
 in the context. Do not stop at the first relevant source. Facts relevant to the \
 question may be spread across multiple chunks.
 
-2. CITE EVERY CLAIM.
-   After each factual claim, add an inline citation: (Company, Quarter Year, p.PAGE).
-   Example: "Total net sales were $82,959M (AAPL, Q3 2022, p.4)."
-   If a claim is supported by more than one source, list all: \
-(AAPL Q3 2022 p.4; AAPL Q1 2023 p.6).
+2. REPRODUCE FIGURES EXACTLY AS WRITTEN IN THE SOURCE.
+   Copy every dollar amount, percentage, share count, and date verbatim — same \
+units, same format, same precision.
+   WRONG: "$82,959M"  or  "approximately $83 billion"
+   RIGHT: "$82,959 million"  (exactly as it appears in the source)
+   Rounding, abbreviating, or converting units is a factual error.
 
-3. HANDLE MISSING INFORMATION EXPLICITLY.
+3. CITE EVERY CLAIM WITH [Source N].
+   After each factual claim write [Source N], where N matches the numbered source \
+block in the context.
+   Example: "Total net sales were $82,959 million [Source 1]."
+   If a claim is supported by more than one source: [Source 1][Source 3].
+
+4. HANDLE MISSING INFORMATION EXPLICITLY.
    Use ONLY facts present in the provided sources. If the context does not contain \
 enough information to fully answer the question, state exactly what is missing:
    "The context does not include [specific fact]. Based on available sources: …"
    Never infer, extrapolate, or fill gaps from general knowledge.
 
-4. COMPARISON QUESTIONS — two-step approach.
-   When the question asks you to compare quarters, years, or companies:
-   Step A — Extract: list the relevant figure for each entity from its source.
-   Step B — Compare: produce the comparison only after all figures are listed.
-   This prevents anchoring on the first entity and ignoring the rest."""
+5. TEMPORAL ANCHORING — confine findings to the period the question asks about.
+   If the question specifies a particular quarter or year (e.g. "Q2 2023", \
+"fiscal 2022"), treat only information from that period as primary findings. \
+Facts from other periods that appear in the sources are background context — \
+do not elevate them to primary claims in your answer. If a source mentions an \
+event from an earlier period as historical background, label it as such rather \
+than presenting it as a direct answer to the question.
+   Exception: if the question explicitly asks about multiple periods or trends \
+over time, cover all relevant periods.
+
+6. COMPARISON QUESTIONS — extract first, then compare.
+   When the question asks you to compare quarters, years, or companies, first list \
+the relevant figure for each entity with its source, then produce the comparison. \
+Do not anchor on the first entity and ignore the rest."""
 
 
 def _build_context_block(chunks: List[RetrievedChunk]) -> str:
