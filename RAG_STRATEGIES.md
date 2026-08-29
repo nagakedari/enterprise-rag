@@ -498,15 +498,6 @@ seed=42). Run-tag naming: `{engine}_{chunking}_{mode}{_a<alpha>}{_k<top_k>}_{fil
 
 ### Caveats — how to read this
 
-- All "current pipeline" runs: n=25, seed=42. Directionally comparable but
-  not a controlled experiment with statistically significant differences.
-- Judge-model: generation uses `gpt-4o-mini`, evaluation/judging uses `gpt-4o`
-  (`EVALUATION_MODEL` in `.env`) — different models, so self-judging bias is
-  not currently a concern for `correctness`, `faithfulness`,
-  `factual_error_rate`, or the other LLM-scored metrics. (This was not always
-  true — an earlier `.env` override collapsed both to `gpt-4o-mini`; if you
-  see that override reappear, treat relative comparisons as more trustworthy
-  than absolute scores again.)
 - Latency is not measured. The evaluation pipeline has no timing
   instrumentation — add a timer around `_retrieve_chunks()` and `generate()`
   in `run_evaluation.py` if needed.
