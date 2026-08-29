@@ -1,0 +1,594 @@
+question,gold_source_docs,gold_pages_raw,retrieved_chunks,gold_page_present,match_detail
+Did Intel announce any significant changes to its accounting policies in the latest 10-Q?,*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 9, 10, 14, 18, 21, 35, 43 and 45","[1] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.294) | [2] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.483) | [3] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.451) | [4] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.430) | [5] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.289) | [6] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.264) | [7] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.244)",❌,not found
+"In the Q2 2023 10-Q, did Microsoft announce any major business acquisitions or spin-offs?",*2023 Q2 MSFT*,"2023 Q2 MSFT.pdf, Pages 19 and 54","[1] 2023 Q2 MSFT.pdf p1 §PREAMBLE (score=0.585) | [2] 2023 Q2 MSFT.pdf p54 §PART II
+Item 1A (score=0.412) | [3] 2023 Q2 MSFT.pdf p51 §PART II. OTHER INFORMATIO (score=0.469) | [4] 2023 Q2 MSFT.pdf p16 §PART I
+Item 1 (score=0.388) | [5] 2023 Q2 MSFT.pdf p11 §PART I
+Item 1 (score=0.388) | [6] 2023 Q2 MSFT.pdf p3 §PART I
+Item 1 (score=0.388) | [7] 2023 Q2 MSFT.pdf p28 §PART I
+Item 1 (score=0.389)",✅,2023 Q2 MSFT.pdf p54
+What changes in debt and interest expense were reported by NVIDIA in the Q1 2023 10-Q?,*2023 Q1 NVDA*,"2023 Q1 NVDA.pdf, Pages 18 and 30",[1] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.573) | [2] 2023 Q1 NVDA.pdf p32 §ITEM 1A. RISK FACTORS (score=0.389) | [3] 2023 Q1 NVDA.pdf p1 §PREAMBLE (score=0.520) | [4] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.931) | [5] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.742) | [6] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.697) | [7] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.451),❌,not found
+"In the latest quarter, what were the sales figures for NVIDIA's gaming and professional GPU segments?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 24 and 29",[1] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.905) | [2] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.548) | [3] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.271) | [4] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.650) | [5] 2023 Q2 NVDA.pdf p22 §Note 15 - Segment Informa (score=0.271) | [6] 2023 Q3 NVDA.pdf p22 §Note 15 - Segment Informa (score=0.308) | [7] 2022 Q3 NVDA.pdf p21 §Note 15 - Segment Informa (score=0.248),❌,not found
+"From the latest 10-Q, how does Apple's discussion on market risk in the financial section align with the risk factors mentioned in the company's business overview?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 17, 22 and 23",[1] 2022 Q3 AAPL.pdf p22 §Item 3.    Quantitative a (score=0.710) | [2] 2023 Q1 AAPL.pdf p23 §Item 3.    Quantitative a (score=0.619) | [3] 2023 Q3 AAPL.pdf p22 §Item 3.    Quantitative a (score=0.691) | [4] 2023 Q2 AAPL.pdf p22 §Item 3.    Quantitative a (score=0.665) | [5] 2023 Q3 AAPL.pdf p17 §Item 2.    Management’s D (score=0.412) | [6] 2023 Q2 AAPL.pdf p17 §Item 2.    Management’s D (score=0.403) | [7] 2022 Q3 AAPL.pdf p17 §Item 2.    Management’s D (score=0.360),✅,2023 Q3 AAPL.pdf p22
+How has Microsoft's total net sales evolved over time?,*MSFT*,"2022 Q3 MSFT.pdf, Pages 3, 27, 28, 34 and 35
+2023 Q1 MSFT.pdf, Pages 3, 28, 29, 35 and 37
+2023 Q2 MSFT.pdf, Pages 3, 29, 30, 36 and 38
+2023 Q3 MSFT.pdf, Pages 3, 27, 33 and 34","[1] 2023 Q1 MSFT.pdf p38 §PART I
+Item 2 (score=0.237) | [2] 2023 Q1 MSFT.pdf p29 §PART I
+Item 1 (score=0.278) | [3] 2023 Q3 MSFT.pdf p33 §PART I
+Item 2 (score=0.275) | [4] 2023 Q2 MSFT.pdf p30 §PART I
+Item 1 (score=0.288) | [5] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.345) | [6] 2022 Q3 MSFT.pdf p28 §PART I
+Item 1 (score=0.330) | [7] 2023 Q2 MSFT.pdf p37 §PART I
+Item 2 (score=0.231)",✅,2023 Q1 MSFT.pdf p29
+Were there any significant business acquisitions or divestitures mentioned by Intel in the Q2 2023 10-Q?,*2023 Q2 INTC*,"2023 Q2 INTC.pdf, Page 16","[1] 2023 Q2 INTC.pdf p16 §Note 9 : (score=0.576) | [2] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.331) | [3] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.292) | [4] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.421) | [5] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.415) | [6] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.590) | [7] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.344)",✅,2023 Q2 INTC.pdf p16
+Analyze how NVIDIA's reported tax rate in the most recent 10-Q correlates with the discussion on tax contingencies in the notes.,*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 11, 12, 13, 17, 23, 24, 28, 29, 30 and 32",[1] 2022 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.688) | [2] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.609) | [3] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.449) | [4] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.385) | [5] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.241) | [6] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.334) | [7] 2023 Q1 NVDA.pdf p11 §Note 6 – Income Taxes (score=0.307),❌,not found
+"What was the effective tax rate for Intel as stated in the most recent 10-Q, and how does this compare to previous quarters?",*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 15 and 38","[1] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.546) | [2] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.533) | [3] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.530) | [4] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.276) | [5] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.276) | [6] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.465) | [7] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.684)",❌,not found
+"For Intel's Q1 2023 10-Q, correlate the details of debt instruments in the financial statements with the management discussion on debt strategy.",*2023 Q1 INTC*,"2023 Q1 INTC.pdf, Pages 16, 35 and 39",[1] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.672) | [2] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.470) | [3] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.707) | [4] 2023 Q1 INTC.pdf p17 §Note 10 : Fair Value (score=0.472) | [5] 2023 Q1 INTC.pdf p14 §Note 7 : Investments (score=0.558) | [6] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.433) | [7] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.583),❌,not found
+"Has there been a substantial shift in Intel's operating expenses over the reported quarters? If so, what have been the driving factors?",*INTC*,"2022 Q3 INTC.pdf, Pages 5, 11, 13, 14, 23, 35, 37 and 39
+2023 Q1 INTC.pdf, Pages 1, 6, 12, 14, 16, 18, 21, 25, 30, 34, 39 and 41
+2023 Q2 INTC.pdf, Pages 1, 6, 8, 10, 12, 14, 15, 16, 21, 22, 26, 32, 34, 36, 42, 44 and 50
+2023 Q3 INTC.pdf, Pages 1, 6, 9, 12, 14, 15, 18, 21, 22, 33, 35, 37, 40, 42, 43, 45, 48, 50 and 54","[1] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.368) | [2] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.305) | [3] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.325) | [4] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.329) | [5] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.329) | [6] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.500) | [7] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.500)",✅,2023 Q3 INTC.pdf p21
+What were the cash flow from operations figures for Intel as per the Q3 2022 10-Q?,*2022 Q3 INTC*,"2022 Q3 INTC.pdf, Pages 21, 40, 41, 59 and 60",[1] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.554) | [2] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.657) | [3] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.280) | [4] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.392) | [5] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.740) | [6] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.405) | [7] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.957),✅,2022 Q3 INTC.pdf p21
+"How have NVIDIA's inventory levels changed during these quarters, and what might this indicate regarding their supply chain management?",*NVDA*,"2022 Q3 NVDA.pdf, Pages 5, 16 and 32
+2023 Q1 NVDA.pdf, Pages 23, 33, 35, 37 and 42
+2023 Q2 NVDA.pdf, Pages 5 and 16
+2023 Q3 NVDA.pdf, Pages 5 and 16",[1] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.299) | [2] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.560) | [3] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.466) | [4] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.432) | [5] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.379) | [6] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.384) | [7] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.579),✅,2023 Q1 NVDA.pdf p23
+"In the latest 10-Q, how does the revenue from Microsoft's new product launches compare with its marketing and advertising expenses?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 26, 30, 33, 40 and 45","[1] 2023 Q2 MSFT.pdf p41 §PART I
+Item 2 (score=0.394) | [2] 2022 Q3 MSFT.pdf p37 §PART I
+Item 2 (score=0.324) | [3] 2023 Q2 MSFT.pdf p36 §PART I
+Item 2 (score=0.434) | [4] 2022 Q3 MSFT.pdf p28 §PART I
+Item 1 (score=0.288) | [5] 2023 Q1 MSFT.pdf p29 §PART I
+Item 1 (score=0.328) | [6] 2022 Q3 MSFT.pdf p34 §PART I
+Item 2 (score=0.351) | [7] 2023 Q1 MSFT.pdf p40 §PART I
+Item 2 (score=0.449)",❌,not found
+"In Amazon's Q2 2023 10-Q, how does the discussion on employee compensation and benefits in the human resources section relate to the reported financial expenses?",*2023 Q2 AMZN*,"2023 Q2 AMZN.pdf, Pages 3, 4, 7, 8, 16 and 26","[1] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.879) | [2] 2023 Q2 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.480) | [3] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.676) | [4] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.406) | [5] 2023 Q2 AMZN.pdf p17 §Note 7 — INCOME TAXES (score=0.291) | [6] 2023 Q2 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.336) | [7] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.875)",✅,2023 Q2 AMZN.pdf p3
+"Have there been notable fluctuations in Microsoft's operational expenditures during the reported quarters? If so, what have been the principal factors behind these changes?",*MSFT*,"2022 Q3 MSFT.pdf, Pages 5, 12, 20 and 25
+2023 Q1 MSFT.pdf, Pages 10, 12, 20, 26 and 32
+2023 Q2 MSFT.pdf, Pages 5, 6, 10, 13, 22, 26, 30, 33 and 40
+2023 Q3 MSFT.pdf, Pages 19 and 58","[1] 2022 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.510) | [2] 2023 Q1 MSFT.pdf p32 §PART I
+Item 2 (score=0.446) | [3] 2023 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.746) | [4] 2023 Q2 MSFT.pdf p33 §PART I
+Item 2 (score=0.479) | [5] 2023 Q2 MSFT.pdf p36 §PART I
+Item 2 (score=0.405) | [6] 2023 Q2 MSFT.pdf p37 §PART I
+Item 2 (score=0.500) | [7] 2023 Q3 MSFT.pdf p34 §PART I
+Item 2 (score=0.189)",✅,2023 Q1 MSFT.pdf p32
+"For Microsoft's Q2 2023 report, assess the connection between Microsoft's earnings from international markets and the discussion on currency risk in the financial section.",*2023 Q2 MSFT*,"2023 Q2 MSFT.pdf, Pages 16, 33, 50 and 65","[1] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.500) | [2] 2023 Q2 MSFT.pdf p31 §PART I
+Item 1 (score=0.315) | [3] 2023 Q2 MSFT.pdf p1 §PREAMBLE (score=0.491) | [4] 2023 Q2 MSFT.pdf p50 §ITEM 3. QUANTITATIVE AND  (score=0.696) | [5] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.425) | [6] 2023 Q2 MSFT.pdf p36 §PART I
+Item 2 (score=0.311) | [7] 2023 Q2 MSFT.pdf p2 §Item 3.
+Quantitative and  (score=0.335)",✅,2023 Q2 MSFT.pdf p50
+"In the latest 10-Q, how did foreign exchange rates affect Amazon's financials?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 21, 22, 27, 32 and 37","[1] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.492) | [2] 2022 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.251) | [3] 2022 Q3 AMZN.pdf p32 §Item 3.
+Quantitative and  (score=0.754) | [4] 2023 Q3 AMZN.pdf p32 §Item 3.
+Quantitative and  (score=0.674) | [5] 2023 Q2 AMZN.pdf p32 §Item 3.
+Quantitative and  (score=0.652) | [6] 2023 Q1 AMZN.pdf p33 §Item 3.
+Quantitative and  (score=0.650) | [7] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.368)",✅,2023 Q3 AMZN.pdf p32
+Analyze how Amazon's effective tax rate reported in the most recent 10-Q compares with the tax-related discussion in the notes section.,*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 3, 6, 13, 15, 17, 18, 22 and 28","[1] 2023 Q3 AMZN.pdf p17 §Note 7 — INCOME TAXES (score=0.546) | [2] 2022 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.416) | [3] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.277) | [4] 2023 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.269) | [5] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.266) | [6] 2022 Q3 AMZN.pdf p17 §Note 7 — INCOME TAXES (score=0.983) | [7] 2023 Q1 AMZN.pdf p18 §Note 7 — INCOME TAXES (score=0.938)",✅,2023 Q3 AMZN.pdf p17
+How did exchange rate changes impact NVIDIA's financials as detailed in the latest 10-Q?,*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Page 18",[1] 2022 Q3 NVDA.pdf p34 §ITEM 3. QUANTITATIVE AND  (score=0.404) | [2] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.503) | [3] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.499) | [4] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.529) | [5] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.499) | [6] 2023 Q1 NVDA.pdf p31 §ITEM 3. QUANTITATIVE AND  (score=0.361) | [7] 2023 Q2 NVDA.pdf p34 §ITEM 3. QUANTITATIVE AND  (score=0.361),❌,not found
+What were the principal influences on Amazon's operating income as reported in Q2 2023?,*2023 Q2 AMZN*,"2023 Q2 AMZN.pdf, Page 22","[1] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.805) | [2] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.521) | [3] 2023 Q2 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.238) | [4] 2023 Q2 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.424) | [5] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=1.000) | [6] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.528) | [7] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.613)",❌,not found
+What are the significant factors that have led to changes in Intel's gross margin in the latest 10-Q relative to past quarters?,*INTC*,"2023 Q3 INTC.pdf, Pages 5, 11, 26, 29 and 35
+2023 Q2 INTC.pdf, Pages 5 and 34
+2023 Q1 INTC.pdf, Pages 5, 11, 24, 26 and 32
+2022 Q3 INTC.pdf, Pages 4 and 37",[1] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.208) | [2] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.224) | [3] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.699) | [4] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.568) | [5] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.903) | [6] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.998) | [7] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.252),❌,not found
+How has NVIDIA's total net sales trended over time?,*NVDA*,"2022 Q3 NVDA.pdf, Pages 3, 22, 23, 28 and 30
+2023 Q1 NVDA.pdf, Pages 3, 21, 22, 25 and 27
+2023 Q2 NVDA.pdf, Pages 3, 23, 24, 27 and 29
+2023 Q3 NVDA.pdf, Pages 3, 23, 24, 27 and 30",[1] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.523) | [2] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.268) | [3] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.500) | [4] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.736) | [5] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.434) | [6] 2022 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.258) | [7] 2022 Q3 NVDA.pdf p35 §ITEM 4. CONTROLS AND PROC (score=0.397),❌,not found
+Has Microsoft announced any major new company acquisitions or sell-offs in these quarterly reports?,*MSFT*,"2023 Q3 MSFT.pdf, Pages 28 and 39","[1] 2022 Q3 MSFT.pdf p1 §PREAMBLE (score=0.671) | [2] 2023 Q1 MSFT.pdf p1 §PREAMBLE (score=0.575) | [3] 2023 Q3 MSFT.pdf p1 §PREAMBLE (score=0.653) | [4] 2023 Q2 MSFT.pdf p1 §PREAMBLE (score=0.571) | [5] 2023 Q2 MSFT.pdf p6 §PART I
+Item 1 (score=0.500) | [6] 2023 Q1 MSFT.pdf p6 §PART I
+Item 1 (score=0.498) | [7] 2023 Q1 MSFT.pdf p29 §PART I
+Item 1 (score=0.318)",❌,not found
+How have foreign exchange rates affected Microsoft's financial results? Please detail the effects for each reported period.,*MSFT*,"2022 Q3 MSFT.pdf, Page 31
+2023 Q1 MSFT.pdf, Page 32
+2023 Q2 MSFT.pdf, Page 33
+2023 Q3 MSFT.pdf, Pages 31 and 57","[1] 2023 Q3 MSFT.pdf p6 §PART I
+Item 1 (score=0.500) | [2] 2022 Q3 MSFT.pdf p34 §PART I
+Item 2 (score=0.280) | [3] 2022 Q3 MSFT.pdf p1 §PREAMBLE (score=0.311) | [4] 2023 Q3 MSFT.pdf p1 §PREAMBLE (score=0.311) | [5] 2023 Q1 MSFT.pdf p1 §PREAMBLE (score=0.308) | [6] 2023 Q2 MSFT.pdf p1 §PREAMBLE (score=0.311) | [7] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.497)",❌,not found
+"What legal proceedings or potential risks were mentioned in Amazon's Q2 2023 10-Q, and how could they affect the company?",*2023 Q2 AMZN*,"2023 Q2 AMZN.pdf, Page 14","[1] 2023 Q2 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.754) | [2] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.315) | [3] 2023 Q2 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.382) | [4] 2023 Q2 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.327) | [5] 2023 Q2 AMZN.pdf p2 §Item 1.
+Legal Proceedings (score=0.461) | [6] 2023 Q2 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.377) | [7] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.580)",✅,2023 Q2 AMZN.pdf p14
+Are there any legal proceedings or risks disclosed in Microsoft's Q2 2023 10-Q that could significantly impact the company?,*2023 Q2 MSFT*,"2023 Q2 MSFT.pdf, Pages 2, 48, 51, 58 and 62","[1] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.311) | [2] 2023 Q2 MSFT.pdf p57 §PART II
+Item 1A (score=0.342) | [3] 2023 Q2 MSFT.pdf p1 §PREAMBLE (score=0.491) | [4] 2023 Q2 MSFT.pdf p25 §NOTE 14 — CONTINGENCIES (score=0.559) | [5] 2023 Q2 MSFT.pdf p51 §ITEM 1. LEGAL PROCEEDINGS (score=0.779) | [6] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.500) | [7] 2023 Q2 MSFT.pdf p31 §PART I
+Item 1 (score=0.267)",✅,2023 Q2 MSFT.pdf p51
+"In the first quarter of 2023, how much did Apple spend on research and development, and what was the focus of this expenditure?",*2023 Q1 AAPL*,"2023 Q1 AAPL.pdf, Pages 4, 17 and 22",[1] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.952) | [2] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.445) | [3] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.801) | [4] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.614) | [5] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.669) | [6] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.392) | [7] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.568),✅,2023 Q1 AAPL.pdf p4
+"For the latest quarter, what was the total revenue generated from Apple's iPhone sales?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 10 and 19",[1] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.858) | [2] 2023 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.663) | [3] 2022 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.834) | [4] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.687) | [5] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.505) | [6] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.868) | [7] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.948),✅,2023 Q3 AAPL.pdf p10
+"What were the risk factors identified by Intel in its Q3 2023 10-Q, especially any that are newly emerging or increasing?",*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 2, 26 and 43","[1] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.857) | [2] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.641) | [3] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.557) | [4] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.618) | [5] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.684) | [6] 2023 Q3 INTC.pdf p46 §Item 1A.
+Risk Factors (score=0.540) | [7] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.422)",❌,not found
+Are there any significant changes in Amazon's debt structure or interest expenses across these quarters?,*AMZN*,"2022 Q3 AMZN.pdf, Pages 3, 4, 8, 13 and 28
+2023 Q1 AMZN.pdf, Pages 3, 4, 12, 13, 15, 17, 23, 24, 25 and 29
+2023 Q2 AMZN.pdf, Pages 3, 4, 6, 13, 15, 16, 19, 20, 22, 23, 24, 26, 28 and 30
+2023 Q3 AMZN.pdf, Pages 3, 4, 13, 15, 20, 23, 24, 25, 26 and 28","[1] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.219) | [2] 2023 Q1 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.219) | [3] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.373) | [4] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.442) | [5] 2023 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.500) | [6] 2023 Q2 AMZN.pdf p15 §Note 5 — DEBT (score=0.299) | [7] 2023 Q3 AMZN.pdf p15 §Note 5 — DEBT (score=0.344)",✅,2023 Q1 AMZN.pdf p3
+"In Amazon's Q2 2023 report, examine the correlation between revenues from international markets and the discussion on currency exchange risks.",*2023 Q2 AMZN*,"2023 Q2 AMZN.pdf, Pages 19, 22, 24 and 32","[1] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.700) | [2] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.294) | [3] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.222) | [4] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.251) | [5] 2023 Q2 AMZN.pdf p32 §Item 3.
+Quantitative and  (score=0.895) | [6] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.430) | [7] 2023 Q2 AMZN.pdf p17 §Note 7 — INCOME TAXES (score=0.196)",✅,2023 Q2 AMZN.pdf p32
+"What specific legal proceedings or potential liabilities were mentioned in Apple's Q2 2023 10-Q, and what is their potential impact?",*2023 Q2 AAPL*,"2023 Q2 AAPL.pdf, Page 23","[1] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.616) | [2] 2023 Q2 AAPL.pdf p1 §PREAMBLE (score=0.626) | [3] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.578) | [4] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.639) | [5] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.850) | [6] 2023 Q2 AAPL.pdf p3 §Part II
+Item 1. (score=0.696) | [7] 2023 Q2 AAPL.pdf p17 §Item 2.    Management’s D (score=0.632)",❌,not found
+How does the information about legal contingencies in Intel's Q3 2022 10-Q relate to the financial reserves allocated for these potential liabilities?,*2022 Q3 INTC*,"2022 Q3 INTC.pdf, Pages 3, 13, 21 and 42","[1] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.726) | [2] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.620) | [3] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.393) | [4] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.524) | [5] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.324) | [6] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.466) | [7] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.626)",✅,2022 Q3 INTC.pdf p21
+"In Microsoft's Q1 2023 10-Q, how do the details of Microsoft's debt instruments from the financial statements correspond with the management's discussion on debt management?",*2023 Q1 MSFT*,"2023 Q1 MSFT.pdf, Page 20","[1] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.249) | [2] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.408) | [3] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.285) | [4] 2023 Q1 MSFT.pdf p30 §PART I
+Item 1 (score=0.381) | [5] 2023 Q1 MSFT.pdf p1 §PREAMBLE (score=0.304) | [6] 2023 Q1 MSFT.pdf p2 §Item 2.
+Management’s Disc (score=0.518) | [7] 2023 Q1 MSFT.pdf p31 §Item 1A of this Form 10-Q (score=0.656)",❌,not found
+"For NVIDIA's Q1 2023 10-Q, what is the relationship between R&D spending and the development of new GPU technologies or services?",*2023 Q1 NVDA*,"2023 Q1 NVDA.pdf, Pages 32 and 33",[1] 2023 Q1 NVDA.pdf p1 §PREAMBLE (score=0.796) | [2] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.557) | [3] 2023 Q1 NVDA.pdf p32 §ITEM 1A. RISK FACTORS (score=0.588) | [4] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.320) | [5] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.376) | [6] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.911) | [7] 2023 Q1 NVDA.pdf p18 §Note 13 - Commitments and (score=0.380),✅,2023 Q1 NVDA.pdf p32
+"In NVIDIA's latest 10-Q, how does the revenue distribution across its product lines compare to the costs associated with those products?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 22, 26, 36, 37 and 39",[1] 2023 Q3 NVDA.pdf p22 §Note 15 - Segment Informa (score=0.347) | [2] 2023 Q2 NVDA.pdf p22 §Note 15 - Segment Informa (score=0.344) | [3] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.386) | [4] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.397) | [5] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.304) | [6] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.381) | [7] 2023 Q3 NVDA.pdf p16 §Note 10 - Balance Sheet C (score=0.305),✅,2023 Q3 NVDA.pdf p22
+How much of Microsoft's total revenue was attributed to its Personal Computing segment in Q3 2023?,*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 27 and 34","[1] 2023 Q3 MSFT.pdf p20 §NOTE 11 — UNEARNED REVENU (score=0.440) | [2] 2023 Q3 MSFT.pdf p27 §PART I
+Item 1 (score=0.882) | [3] 2023 Q3 MSFT.pdf p34 §PART I
+Item 2 (score=0.766) | [4] 2023 Q3 MSFT.pdf p27 §PART I
+Item 1 (score=0.295) | [5] 2023 Q3 MSFT.pdf p35 §PART I
+Item 2 (score=0.577) | [6] 2023 Q3 MSFT.pdf p21 §PART I
+Item 1 (score=0.248) | [7] 2023 Q3 MSFT.pdf p39 §PART I
+Item 2 (score=0.191)",✅,2023 Q3 MSFT.pdf p27
+Are there any notable changes in Amazon's liquidity position or cash flows as reported in these 10-Qs?,*AMZN*,"2022 Q3 AMZN.pdf, Pages 3, 22, 29 and 30
+2023 Q1 AMZN.pdf, Pages 3, 23, 29 and 37
+2023 Q2 AMZN.pdf, Pages 3, 22, 23, 28 and 36
+2023 Q3 AMZN.pdf, Pages 3, 6, 12, 22, 29 and 30","[1] 2023 Q2 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.311) | [2] 2023 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.278) | [3] 2022 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.291) | [4] 2023 Q3 AMZN.pdf p10 §Note 2 — FINANCIAL INSTRU (score=0.282) | [5] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.315) | [6] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.639) | [7] 2023 Q1 AMZN.pdf p29 §Part I, “Financial Statem (score=0.610)",✅,2023 Q3 AMZN.pdf p3
+How have Apple's inventory levels changed across these quarters and what might this indicate about their supply chain management?,*AAPL*,"2022 Q3 AAPL.pdf, Pages 4, 6, 9 and 11
+2023 Q1 AAPL.pdf, Pages 6, 10, 14 and 20
+2023 Q2 AAPL.pdf, Pages 6 and 13
+2023 Q3 AAPL.pdf, Pages 6 and 13",[1] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.411) | [2] 2022 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.392) | [3] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.391) | [4] 2023 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.384) | [5] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.400) | [6] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.323) | [7] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.421),✅,2022 Q3 AAPL.pdf p9
+"In the latest 10-Q, how does the revenue from NVIDIA's new product launches compare with its marketing and advertising expenses?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 26, 27, 37, 39 and 40",[1] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.363) | [2] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.334) | [3] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.369) | [4] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.270) | [5] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.431) | [6] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.319) | [7] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.313),❌,not found
+What was NVIDIA's operating cash flow as revealed in the Q3 2022 10-Q?,*2022 Q3 NVDA*,"2022 Q3 NVDA.pdf, Pages 8 and 33",[1] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.744) | [2] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.418) | [3] 2022 Q3 NVDA.pdf p21 §Note 15 - Segment Informa (score=0.390) | [4] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.323) | [5] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.624) | [6] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.317) | [7] 2022 Q3 NVDA.pdf p1 §PREAMBLE (score=0.403),❌,not found
+"In the latest 10-Q, how does NVIDIA's discussion on market risk in the financial section align with the risk factors outlined in the business overview?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 25, 26, 37, 42 and 43",[1] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.635) | [2] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.578) | [3] 2023 Q1 NVDA.pdf p32 §ITEM 1A. RISK FACTORS (score=0.507) | [4] 2022 Q3 NVDA.pdf p34 §ITEM 3. QUANTITATIVE AND  (score=0.211) | [5] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=1.000) | [6] 2022 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.966) | [7] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.930),✅,2023 Q3 NVDA.pdf p25
+"Outline the risk factors for Intel's business, and how they have evolved over the reporting periods.",*INTC*,"2023 Q1 INTC.pdf, Page 3
+2022 Q3 INTC.pdf, Page 3
+2023 Q2 INTC.pdf, Pages 3 and 4
+2023 Q3 INTC.pdf, Pages 3 and 4","[1] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.875) | [2] 2023 Q3 INTC.pdf p46 §Item 1A.
+Risk Factors (score=0.403) | [3] 2023 Q2 INTC.pdf p45 §Item 1A.
+Risk Factors (score=0.387) | [4] 2023 Q1 INTC.pdf p42 §Item 1A.
+Risk Factors (score=0.414) | [5] 2022 Q3 INTC.pdf p48 §Item 1A.
+Risk Factors (score=0.436) | [6] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.304) | [7] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.296)",❌,not found
+What were the main contributors to NVIDIA's net income in the second quarter of 2023?,*2023 Q2 NVDA*,"2023 Q2 NVDA.pdf, Pages 3, 4, 6, 12, 14, 17, 23, 24, 27, 29, 30 and 31",[1] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.879) | [2] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.338) | [3] 2023 Q2 NVDA.pdf p16 §Note 10 - Balance Sheet C (score=0.555) | [4] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.922) | [5] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.875) | [6] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.800) | [7] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.537),✅,2023 Q2 NVDA.pdf p3
+"What significant changes, if any, in accounting practices were reported by NVIDIA in its most recent 10-Q?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Page 9",[1] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.493) | [2] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.479) | [3] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.474) | [4] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.459) | [5] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.586) | [6] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.578) | [7] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.573),❌,not found
+"In NVIDIA's Q2 2023 10-Q, how does the discussion on employee compensation in the human resources section relate to the reported financial expenses?",*2023 Q2 NVDA*,"2023 Q2 NVDA.pdf, Pages 8, 11, 23, 24 and 29",[1] 2023 Q2 NVDA.pdf p1 §PREAMBLE (score=0.583) | [2] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.478) | [3] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.683) | [4] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.287) | [5] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.435) | [6] 2023 Q2 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.594) | [7] 2023 Q2 NVDA.pdf p16 §Note 10 - Balance Sheet C (score=0.345),❌,not found
+What was Intel's gross margin as reported in their latest 10-Q?,*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 6, 8, 33 and 35",[1] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.388) | [2] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.353) | [3] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.501) | [4] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.692) | [5] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.961) | [6] 2022 Q3 INTC.pdf p21 §Note 12 : (score=1.000) | [7] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.321),❌,not found
+Outline the risk elements associated with Microsoft's business and the evolution of these risks over the reporting timeframe.,*MSFT*,"2022 Q3 MSFT.pdf, Pages 31, 53, 57, 59 and 60
+2023 Q1 MSFT.pdf, Pages 32, 57, 58, 61 and 63
+2023 Q2 MSFT.pdf, Pages 33, 58, 60, 62 and 64
+2023 Q3 MSFT.pdf, Pages 31, 51, 52 and 57","[1] 2022 Q3 MSFT.pdf p46 §ITEM 1A. RISK FACTORS (score=0.373) | [2] 2023 Q2 MSFT.pdf p51 §ITEM 1A. RISK FACTORS (score=0.348) | [3] 2023 Q2 MSFT.pdf p2 §Item 1A.
+Risk Factors (score=0.368) | [4] 2023 Q1 MSFT.pdf p2 §Item 1A.
+Risk Factors (score=0.387) | [5] 2023 Q3 MSFT.pdf p2 §Item 1A.
+Risk Factors (score=0.368) | [6] 2022 Q3 MSFT.pdf p2 §Item 1A.
+Risk Factors (score=0.368) | [7] 2023 Q3 MSFT.pdf p51 §PART II
+Item 1A (score=0.608)",✅,2023 Q3 MSFT.pdf p51
+How did Apple's inventory levels in the Q3 2022 report reflect on their supply chain efficiency?,*2022 Q3 AAPL*,"2022 Q3 AAPL.pdf, Pages 6 and 11",[1] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.758) | [2] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.608) | [3] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.782) | [4] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.565) | [5] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.541) | [6] 2022 Q3 AAPL.pdf p1 §PREAMBLE (score=0.589) | [7] 2022 Q3 AAPL.pdf p24 §Item 6.    Exhibits (score=0.658),❌,not found
+"How much has Microsoft invested in research and development in the first quarter of 2023, and what were the strategic priorities?",*2023 Q1 MSFT*,"2023 Q1 MSFT.pdf, Pages 3, 21 and 40","[1] 2023 Q1 MSFT.pdf p25 §PART I
+Item 1 (score=0.383) | [2] 2023 Q1 MSFT.pdf p29 §PART I
+Item 1 (score=0.234) | [3] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.194) | [4] 2023 Q1 MSFT.pdf p40 §PART I
+Item 2 (score=0.695) | [5] 2023 Q1 MSFT.pdf p37 §PART I
+Item 2 (score=0.235) | [6] 2023 Q1 MSFT.pdf p32 §PART I
+Item 2 (score=0.760) | [7] 2023 Q1 MSFT.pdf p33 §PART I
+Item 2 (score=0.414)",✅,2023 Q1 MSFT.pdf p40
+"From Microsoft's Q3 2023 10-Q, how does the operational expenses section relate to the segment reporting and insights shared?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Page 26","[1] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.415) | [2] 2023 Q3 MSFT.pdf p1 §PREAMBLE (score=0.522) | [3] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.500) | [4] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.248) | [5] 2023 Q3 MSFT.pdf p27 §PART I
+Item 1 (score=0.444) | [6] 2023 Q3 MSFT.pdf p34 §PART I
+Item 2 (score=0.463) | [7] 2023 Q3 MSFT.pdf p28 §PART I
+Item 1 (score=0.387)",❌,not found
+Are there any significant changes or new disclosures in Apple's accounting policies as reported in these 10-Qs?,*AAPL*,"2023 Q1 AAPL.pdf, Pages 9 and 23
+2023 Q2 AAPL.pdf, Pages 9 and 22
+2023 Q3 AAPL.pdf, Page 22",[1] 2022 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.800) | [2] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.795) | [3] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.778) | [4] 2023 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.768) | [5] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.356) | [6] 2022 Q3 AAPL.pdf p1 §PREAMBLE (score=0.274) | [7] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.341),✅,2023 Q1 AAPL.pdf p9
+"In Microsoft's Q1 2023 10-Q, what relationship can be seen between Microsoft's R&D spending and the introduction of new software or services?",*2023 Q1 MSFT*,"2023 Q1 MSFT.pdf, Pages 32, 46, 51, 54 and 57","[1] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.337) | [2] 2023 Q1 MSFT.pdf p1 §PREAMBLE (score=0.559) | [3] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.310) | [4] 2023 Q1 MSFT.pdf p32 §PART I
+Item 2 (score=0.729) | [5] 2023 Q1 MSFT.pdf p29 §PART I
+Item 1 (score=0.312) | [6] 2023 Q1 MSFT.pdf p31 §Item 1A of this Form 10-Q (score=0.658) | [7] 2023 Q1 MSFT.pdf p33 §PART I
+Item 2 (score=0.354)",✅,2023 Q1 MSFT.pdf p32
+"In the latest 10-Q, how does the revenue from new product launches by Apple compare with the company's marketing and advertising expenses?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 17 and 22",[1] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.283) | [2] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.209) | [3] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.209) | [4] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.874) | [5] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.303) | [6] 2022 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.757) | [7] 2023 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.353),❌,not found
+Can any trends be identified in Amazon's AWS (Amazon Web Services) segment revenue over the reported periods?,*AMZN*,"2022 Q3 AMZN.pdf, Pages 19, 20 and 24
+2023 Q1 AMZN.pdf, Pages 20, 21 and 25
+2023 Q2 AMZN.pdf, Pages 19, 20 and 24
+2023 Q3 AMZN.pdf, Pages 19, 20 and 24","[1] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.422) | [2] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.231) | [3] 2023 Q1 AMZN.pdf p19 §Note 8 — SEGMENT INFORMAT (score=0.509) | [4] 2022 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.382) | [5] 2023 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.476) | [6] 2023 Q2 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.417) | [7] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.715)",❌,not found
+Can any trends be identified in Apple's Services segment revenue over the reported periods?,*AAPL*,"2022 Q3 AAPL.pdf, Pages 4, 10 and 18
+2023 Q1 AAPL.pdf, Pages 4, 10 and 20
+2023 Q2 AAPL.pdf, Pages 4, 10 and 19
+2023 Q3 AAPL.pdf, Pages 4, 10 and 19",[1] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.953) | [2] 2023 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.507) | [3] 2022 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.861) | [4] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.493) | [5] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.694) | [6] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.565) | [7] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.798),✅,2023 Q3 AAPL.pdf p10
+What significant movements have been observed in Microsoft's liquidity status or cash flow as per the quarterly reports?,*MSFT*,"2022 Q3 MSFT.pdf, Pages 5, 6, 13, 25, 27 and 35
+2023 Q1 MSFT.pdf, Pages 5, 6, 11, 13 and 41
+2023 Q2 MSFT.pdf, Pages 5, 6, 7, 11, 13, 14 and 42
+2023 Q3 MSFT.pdf, Pages 5, 6, 12, 16, 25 and 38",[1] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.241) | [2] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.240) | [3] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.240) | [4] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.240) | [5] 2023 Q1 MSFT.pdf p1 §PREAMBLE (score=0.497) | [6] 2022 Q3 MSFT.pdf p1 §PREAMBLE (score=0.500) | [7] 2023 Q2 MSFT.pdf p1 §PREAMBLE (score=0.500),❌,not found
+"Which risk factors were highlighted by NVIDIA in its Q3 2023 10-Q, especially those that are new or have intensified?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 26 and 43","[1] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.885) | [2] 2023 Q3 NVDA.pdf p1 §PREAMBLE (score=0.314) | [3] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.206) | [4] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.345) | [5] 2023 Q3 NVDA.pdf p19 §Note 13 - Commitments and (score=0.221) | [6] 2023 Q3 NVDA.pdf p2 §Item 1A.
+Risk Factors (score=0.277) | [7] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.544)",❌,not found
+"From the latest 10-Q, how does Microsoft's discussion on market risk and financial instruments align with the risk factors outlined in the business overview?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Page 31","[1] 2023 Q2 MSFT.pdf p50 §ITEM 3. QUANTITATIVE AND  (score=0.558) | [2] 2023 Q3 MSFT.pdf p43 §ITEM 3. QUANTITATIVE AND  (score=0.553) | [3] 2023 Q1 MSFT.pdf p49 §ITEM 3. QUANTITATIVE AND  (score=0.568) | [4] 2022 Q3 MSFT.pdf p45 §ITEM 3. QUANTITATIVE AND  (score=0.546) | [5] 2023 Q3 MSFT.pdf p44 §ITEM 1A. RISK FACTORS (score=0.254) | [6] 2022 Q3 MSFT.pdf p32 §PART I
+Item 2 (score=0.266) | [7] 2023 Q2 MSFT.pdf p2 §Item 3.
+Quantitative and  (score=0.473)",❌,not found
+"What was the revenue from Microsoft's cloud services, including Azure, in the latest quarter?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Page 27","[1] 2023 Q2 MSFT.pdf p36 §PART I
+Item 2 (score=0.636) | [2] 2023 Q3 MSFT.pdf p35 §PART I
+Item 2 (score=0.460) | [3] 2023 Q1 MSFT.pdf p37 §PART I
+Item 2 (score=0.638) | [4] 2023 Q2 MSFT.pdf p39 §PART I
+Item 2 (score=0.436) | [5] 2022 Q3 MSFT.pdf p28 §PART I
+Item 1 (score=0.463) | [6] 2023 Q2 MSFT.pdf p30 §PART I
+Item 1 (score=0.500) | [7] 2023 Q2 MSFT.pdf p38 §PART I
+Item 2 (score=0.481)",❌,not found
+"Summarize the risk factors to NVIDIA's business, and describe how they have transformed throughout the reporting period.",*NVDA*,"2022 Q3 NVDA.pdf, Pages 26, 36, 37, 38 and 40
+2023 Q1 NVDA.pdf, Pages 24, 33, 34, 35 and 36
+2023 Q2 NVDA.pdf, Pages 26, 36, 37, 40 and 44
+2023 Q3 NVDA.pdf, Pages 26, 27, 37, 38 and 39",[1] 2023 Q1 NVDA.pdf p32 §ITEM 1A. RISK FACTORS (score=0.488) | [2] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.578) | [3] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.424) | [4] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.326) | [5] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.326) | [6] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.326) | [7] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.326),❌,not found
+"In Amazon's Q3 2023 10-Q, how do the changes in inventory levels reflect the supply chain management strategies discussed in the report?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Page 21","[1] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.212) | [2] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.293) | [3] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.243) | [4] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.231) | [5] 2023 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.857) | [6] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.613) | [7] 2023 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.306)",✅,2023 Q3 AMZN.pdf p21
+"In what ways have Microsoft's inventory levels shifted during these quarters, and what does this suggest about their management of the supply chain?",*MSFT*,"2022 Q3 MSFT.pdf, Pages 5, 13, 17 and 20
+2023 Q1 MSFT.pdf, Pages 5, 13, 17, 20 and 22
+2023 Q2 MSFT.pdf, Pages 5, 14, 18 and 22
+2023 Q3 MSFT.pdf, Pages 5, 17 and 19","[1] 2022 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.510) | [2] 2023 Q1 MSFT.pdf p32 §PART I
+Item 2 (score=0.507) | [3] 2023 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.651) | [4] 2023 Q2 MSFT.pdf p33 §PART I
+Item 2 (score=0.481) | [5] 2023 Q3 MSFT.pdf p52 §PART II
+Item 1A (score=0.629) | [6] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.500) | [7] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.497)",❌,not found
+"In Apple's Q1 2023 10-Q, what is the correlation between Apple's R&D expenditure and the new products or services introduced by the company?",*2023 Q1 AAPL*,"2023 Q1 AAPL.pdf, Page 18",[1] 2023 Q1 AAPL.pdf p24 §Item 3.    Defaults Upon  (score=0.405) | [2] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.641) | [3] 2023 Q1 AAPL.pdf p1 §PREAMBLE (score=0.730) | [4] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.685) | [5] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.844) | [6] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.489) | [7] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.464),✅,2023 Q1 AAPL.pdf p18
+How does the information about legal proceedings in Amazon's Q3 2022 10-Q relate to financial provisions or reserves set for these liabilities?,*2022 Q3 AMZN*,"2022 Q3 AMZN.pdf, Pages 14, 21, 22, 42 and 43","[1] 2022 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.834) | [2] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.314) | [3] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.525) | [4] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.400) | [5] 2022 Q3 AMZN.pdf p13 §Note 4 — COMMITMENTS AND  (score=0.695) | [6] 2022 Q3 AMZN.pdf p34 §Item 1.
+Legal Proceedings (score=0.761) | [7] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.395)",✅,2022 Q3 AMZN.pdf p14
+How has Apple's total net sales changed over time?,*AAPL*,"2022 Q3 AAPL.pdf, Pages 4, 10, 18 and 19
+2023 Q1 AAPL.pdf, Pages 4, 10, 19 and 20
+2023 Q2 AAPL.pdf, Pages 4, 10, 18 and 19
+2023 Q3 AAPL.pdf, Pages 4, 10, 18 and 19",[1] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.672) | [2] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.835) | [3] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.340) | [4] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.253) | [5] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.548) | [6] 2023 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.299) | [7] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.287),✅,2023 Q1 AAPL.pdf p4
+"For Apple's Q2 2023 report, analyze the relationship between Apple's revenue from international markets and its segment on foreign currency risk to understand the company's exposure to currency fluctuations.",*2023 Q2 AAPL*,"2023 Q2 AAPL.pdf, Pages 11 and 12",[1] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.439) | [2] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.522) | [3] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.544) | [4] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.512) | [5] 2023 Q2 AAPL.pdf p1 §PREAMBLE (score=0.529) | [6] 2023 Q2 AAPL.pdf p22 §Item 3.    Quantitative a (score=0.524) | [7] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.570),❌,not found
+"For Q2 2023, what was the chief factor affecting Microsoft's operating income?",*2023 Q2 MSFT*,"2023 Q2 MSFT.pdf, Pages 8, 17, 24, 26, 29 and 34","[1] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.421) | [2] 2023 Q2 MSFT.pdf p37 §PART I
+Item 2 (score=0.955) | [3] 2023 Q2 MSFT.pdf p40 §PART I
+Item 2 (score=0.689) | [4] 2023 Q2 MSFT.pdf p36 §PART I
+Item 2 (score=0.609) | [5] 2023 Q2 MSFT.pdf p39 §PART I
+Item 2 (score=0.652) | [6] 2023 Q2 MSFT.pdf p30 §PART I
+Item 1 (score=0.283) | [7] 2023 Q2 MSFT.pdf p38 §PART I
+Item 2 (score=0.394)",❌,not found
+What legal proceedings or contingencies are disclosed in these 10-Qs and how might they potentially impact Amazon?,*AMZN*,"2022 Q3 AMZN.pdf, Pages 13, 14, 36, 42 and 43
+2023 Q1 AMZN.pdf, Pages 14 and 43
+2023 Q2 AMZN.pdf, Pages 14 and 42
+2023 Q3 AMZN.pdf, Page 14","[1] 2023 Q2 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.601) | [2] 2023 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.688) | [3] 2022 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.442) | [4] 2022 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.697) | [5] 2023 Q1 AMZN.pdf p13 §Note 4 — COMMITMENTS AND  (score=0.661) | [6] 2022 Q3 AMZN.pdf p13 §Note 4 — COMMITMENTS AND  (score=0.567) | [7] 2022 Q3 AMZN.pdf p34 §Item 1.
+Legal Proceedings (score=0.534)",✅,2023 Q2 AMZN.pdf p14
+"What legal proceedings or contingent liabilities were disclosed in NVIDIA's Q2 2023 10-Q, and what impact could they have?",*2023 Q2 NVDA*,"2023 Q2 NVDA.pdf, Pages 6, 8, 11, 16, 19, 20 and 46",[1] 2023 Q2 NVDA.pdf p19 §Note 13 - Commitments and (score=1.000) | [2] 2023 Q2 NVDA.pdf p1 §PREAMBLE (score=0.333) | [3] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.274) | [4] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.455) | [5] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.278) | [6] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.421) | [7] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.335),✅,2023 Q2 NVDA.pdf p19
+"Summarize the risk factors to Apple's business, and how they have changed over the reporting period",*AAPL*,"2022 Q3 AAPL.pdf, Pages 17 and 23
+2023 Q1 AAPL.pdf, Pages 18, 19 and 24
+2023 Q2 AAPL.pdf, Pages 17 and 23
+2023 Q3 AAPL.pdf, Pages 17 and 23",[1] 2022 Q3 AAPL.pdf p23 §Item 1A.    Risk Factors (score=0.428) | [2] 2023 Q3 AAPL.pdf p23 §Item 1A.    Risk Factors (score=0.825) | [3] 2023 Q2 AAPL.pdf p23 §Item 1A.    Risk Factors (score=0.414) | [4] 2023 Q1 AAPL.pdf p24 §Item 1A.    Risk Factors (score=0.413) | [5] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.387) | [6] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.473) | [7] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.470),✅,2022 Q3 AAPL.pdf p23
+How has Amazon's revenue from online retail services fluctuated across quarters?,*AMZN*,"2022 Q3 AMZN.pdf, Page 4
+2023 Q1 AMZN.pdf, Page 4
+2023 Q2 AMZN.pdf, Page 4
+2023 Q3 AMZN.pdf, Page 4","[1] 2022 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.627) | [2] 2022 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.259) | [3] 2023 Q2 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.590) | [4] 2023 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.599) | [5] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.260) | [6] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.305) | [7] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.427)",❌,not found
+"Did Amazon report any major stock buybacks in its Q3 2023 10-Q, and what was the extent of these repurchases?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 1, 3, 9, 16 and 23","[1] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.335) | [2] 2023 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.229) | [3] 2023 Q3 AMZN.pdf p16 §Note 6 — STOCKHOLDERS’ EQ (score=0.637) | [4] 2023 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.533) | [5] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.443) | [6] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.339) | [7] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.309)",✅,2023 Q3 AMZN.pdf p16
+Does Apple report any significant new business acquisitions or divestitures in these 10-Qs?,*AAPL*,"2022 Q3 AAPL.pdf, Pages 1, 17, 22, 26 and 27
+2023 Q1 AAPL.pdf, Pages 1, 18, 19, 44 and 45
+2023 Q2 AAPL.pdf, Pages 1, 10, 17, 26 and 27
+2023 Q3 AAPL.pdf, Pages 1, 17, 22, 27 and 28",[1] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.450) | [2] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.414) | [3] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.413) | [4] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.411) | [5] 2022 Q3 AAPL.pdf p24 §Item 6.    Exhibits (score=0.408) | [6] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.608) | [7] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.500),❌,not found
+How does Microsoft's revenue distribution across its various business segments in the latest 10-Q compare to the cost of sales for those segments?,*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 27 and 34","[1] 2022 Q3 MSFT.pdf p27 §PART I
+Item 1 (score=0.645) | [2] 2023 Q1 MSFT.pdf p28 §PART I
+Item 1 (score=0.640) | [3] 2023 Q2 MSFT.pdf p29 §PART I
+Item 1 (score=0.668) | [4] 2023 Q3 MSFT.pdf p33 §PART I
+Item 2 (score=0.675) | [5] 2022 Q3 MSFT.pdf p33 §PART I
+Item 2 (score=0.510) | [6] 2023 Q1 MSFT.pdf p34 §PART I
+Item 2 (score=0.468) | [7] 2023 Q2 MSFT.pdf p35 §PART I
+Item 2 (score=0.501)",❌,not found
+"Which risk factors were highlighted in Amazon's Q3 2023 10-Q, and which ones have newly arisen or increased since the last report?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Page 21","[1] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.539) | [2] 2023 Q3 AMZN.pdf p2 §Item 1A.
+Risk Factors (score=0.500) | [3] 2023 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.759) | [4] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.500) | [5] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.404) | [6] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.500) | [7] 2023 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.569)",✅,2023 Q3 AMZN.pdf p21
+"Has there been any significant change in Amazon's operating expenses over the reported quarters? If so, what are the key drivers for this change?",*AMZN*,"2022 Q3 AMZN.pdf, Pages 22, 27 and 37
+2023 Q1 AMZN.pdf, Pages 23 and 28
+2023 Q2 AMZN.pdf, Pages 7, 22 and 27
+2023 Q3 AMZN.pdf, Pages 7, 22 and 27","[1] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.440) | [2] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.500) | [3] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.448) | [4] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.408) | [5] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.380) | [6] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.408) | [7] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.364)",❌,not found
+How have NVIDIA's inventory levels for the Q3 2022 period adapted to market demands?,*2022 Q3 NVDA*,"2022 Q3 NVDA.pdf, Pages 26 and 36",[1] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.342) | [2] 2022 Q3 NVDA.pdf p21 §Note 15 - Segment Informa (score=0.342) | [3] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.469) | [4] 2022 Q3 NVDA.pdf p1 §PREAMBLE (score=0.527) | [5] 2022 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.607) | [6] 2022 Q3 NVDA.pdf p19 §Note 13 - Commitments and (score=0.533) | [7] 2022 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.461),❌,not found
+"From the most recent 10-Q, how do Intel's commitments in ESG areas relate to the expenses and investments reported in the financial statements for sustainability efforts?",*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Page 11","[1] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.868) | [2] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.834) | [3] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.802) | [4] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.522) | [5] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.521) | [6] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.384) | [7] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.317)",❌,not found
+"For Amazon's Q1 2023 10-Q, align the details of debt and financing instruments in the financial statements with the management discussion on financial strategy.",*2023 Q1 AMZN*,"2023 Q1 AMZN.pdf, Pages 15 and 24","[1] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.921) | [2] 2023 Q1 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.424) | [3] 2023 Q1 AMZN.pdf p29 §Part I, “Financial Statem (score=0.471) | [4] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.541) | [5] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.938) | [6] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.401) | [7] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.382)",✅,2023 Q1 AMZN.pdf p24
+"In the latest 10-Q, how does the revenue from Intel's new product launches compare with its marketing and advertising expenses?",*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 11 and 36",[1] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.329) | [2] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.540) | [3] 2023 Q2 INTC.pdf p11 §Note 2 : (score=0.248) | [4] 2023 Q3 INTC.pdf p11 §Note 2 : (score=0.253) | [5] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.646) | [6] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.449) | [7] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.285),✅,2023 Q3 INTC.pdf p11
+"Summarize the risk factors to Amazon's business, and how they have changed over the reporting period.",*AMZN*,"2022 Q3 AMZN.pdf, Page 21
+2023 Q1 AMZN.pdf, Page 22
+2023 Q2 AMZN.pdf, Page 21
+2023 Q3 AMZN.pdf, Page 21","[1] 2023 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.402) | [2] 2022 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.500) | [3] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.492) | [4] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.492) | [5] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.490) | [6] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.490) | [7] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.500)",❌,not found
+"From Apple's most recent 10-Q, how do the insights from the liquidity and capital resources section correlate with the reported changes in Apple's cash flow from operations?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Page 22",[1] 2022 Q3 AAPL.pdf p24 §Item 6.    Exhibits (score=0.502) | [2] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.500) | [3] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.500) | [4] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.243) | [5] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.496) | [6] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.359) | [7] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.447),❌,not found
+"What significant accounting policy changes, if any, did Apple disclose in its most recent 10-Q?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 9, 22, 27 and 28",[1] 2022 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.565) | [2] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.554) | [3] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.542) | [4] 2023 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.530) | [5] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.418) | [6] 2022 Q3 AAPL.pdf p24 §Item 6.    Exhibits (score=0.360) | [7] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.355),✅,2023 Q3 AAPL.pdf p9
+What was NVIDIA's gross margin as stated in the most recent 10-Q report?,*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Page 3",[1] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.313) | [2] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.313) | [3] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.315) | [4] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.315) | [5] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.315) | [6] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.315) | [7] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.341),❌,not found
+"How does Microsoft's research and development spending in the latest quarter stack up against prior quarters, and what are the potential repercussions?",*MSFT*,"2023 Q1 MSFT.pdf, Pages 3, 21 and 40
+2023 Q2 MSFT.pdf, Pages 3 and 41
+2023 Q3 MSFT.pdf, Pages 3 and 35","[1] 2022 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.601) | [2] 2023 Q1 MSFT.pdf p32 §PART I
+Item 2 (score=0.477) | [3] 2023 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.579) | [4] 2023 Q2 MSFT.pdf p33 §PART I
+Item 2 (score=0.470) | [5] 2023 Q2 MSFT.pdf p41 §PART I
+Item 2 (score=0.500) | [6] 2023 Q1 MSFT.pdf p40 §PART I
+Item 2 (score=0.392) | [7] 2023 Q2 MSFT.pdf p36 §PART I
+Item 2 (score=0.162)",✅,2023 Q2 MSFT.pdf p41
+"In Intel's Q2 2023 10-Q, how does the employee compensation section in the human resources area relate to the reported financial expenses?",*2023 Q2 INTC*,"2023 Q2 INTC.pdf, Pages 1, 6, 8, 9, 10, 13, 14, 18, 19, 21, 22, 32, 36, 37, 38, 41, 42, 44 and 50","[1] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.521) | [2] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.778) | [3] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.743) | [4] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.602) | [5] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.581) | [6] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.461) | [7] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.472)",✅,2023 Q2 INTC.pdf p21
+"In Amazon's latest 10-Q, how does the revenue distribution across its diverse business segments like e-commerce, AWS, and others compare to the costs incurred in these segments?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 19, 20, 24 and 25","[1] 2023 Q1 AMZN.pdf p19 §Note 8 — SEGMENT INFORMAT (score=1.000) | [2] 2022 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.723) | [3] 2022 Q3 AMZN.pdf p14 §Item 1 of Part I, “Financ (score=0.378) | [4] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.620) | [5] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.612) | [6] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.534) | [7] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.638)",❌,not found
+What was the reported gross margin for Microsoft in the most recent 10-Q filing?,*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 3 and 33","[1] 2023 Q1 MSFT.pdf p37 §PART I
+Item 2 (score=0.358) | [2] 2023 Q1 MSFT.pdf p35 §PART I
+Item 2 (score=0.503) | [3] 2023 Q2 MSFT.pdf p44 §PART I
+Item 2 (score=0.408) | [4] 2023 Q2 MSFT.pdf p40 §PART I
+Item 2 (score=0.767) | [5] 2023 Q1 MSFT.pdf p35 §PART I
+Item 2 (score=0.626) | [6] 2022 Q3 MSFT.pdf p34 §PART I
+Item 2 (score=0.825) | [7] 2023 Q1 MSFT.pdf p39 §PART I
+Item 2 (score=0.532)",❌,not found
+"In the latest 10-Q, how does the revenue from Amazon's new ventures or product launches compare with its marketing and advertising expenses?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 19, 26, 27, 34 and 40","[1] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.346) | [2] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.500) | [3] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.523) | [4] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.312) | [5] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.317) | [6] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.979) | [7] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.271)",❌,not found
+What insights into inventory management could be gleaned from Intel's Q3 2022 inventory levels?,*2022 Q3 INTC*,"2022 Q3 INTC.pdf, Pages 7 and 12",[1] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.782) | [2] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.891) | [3] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.896) | [4] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.901) | [5] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.455) | [6] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.267) | [7] 2022 Q3 INTC.pdf p12 §Note 4 : (score=0.280),✅,2022 Q3 INTC.pdf p12
+How did foreign exchange rates specifically affect Apple's financial performance in the most recent 10-Q?,*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 17 and 18",[1] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.452) | [2] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.310) | [3] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.307) | [4] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.307) | [5] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.419) | [6] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.518) | [7] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.421),❌,not found
+Are there any notable changes in Apple's liquidity position or cash flows as reported in these 10-Qs?,*AAPL*,"2022 Q3 AAPL.pdf, Page 22
+2023 Q1 AAPL.pdf, Pages 23, 37, 38, 44 and 45
+2023 Q2 AAPL.pdf, Pages 11, 21, 22, 26 and 27
+2023 Q3 AAPL.pdf, Page 22",[1] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.750) | [2] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.697) | [3] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.684) | [4] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.685) | [5] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.426) | [6] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.543) | [7] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.368),❌,not found
+Were there any significant alterations to Amazon's accounting policies as reported in the most recent 10-Q?,*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 21, 39, 40, 48 and 49","[1] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.521) | [2] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.500) | [3] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.500) | [4] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.497) | [5] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.520) | [6] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.492) | [7] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.479)",❌,not found
+"From the most recent 10-Q, how does Microsoft's section on environmental, social, and governance commitments relate to the expenses and investments reported in the financial statements for sustainability initiatives?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 8, 31, 40, 56 and 57","[1] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.498) | [2] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.498) | [3] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.500) | [4] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.498) | [5] 2022 Q3 MSFT.pdf p32 §PART I
+Item 2 (score=0.795) | [6] 2023 Q3 MSFT.pdf p36 §PART I
+Item 2 (score=0.286) | [7] 2023 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.451)",✅,2023 Q3 MSFT.pdf p31
+How did Apple's operating expenses for Q1 2023 compare to its revenue for the same quarter?,*2023 Q1 AAPL*,"2023 Q1 AAPL.pdf, Pages 4, 10, 19, 20 and 22",[1] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.896) | [2] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.835) | [3] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.559) | [4] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.704) | [5] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.982) | [6] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.699) | [7] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.486),✅,2023 Q1 AAPL.pdf p4
+Has Intel reported any significant business acquisitions or divestitures in these quarterly reports?,*INTC*,"2023 Q1 INTC.pdf, Page 16
+2023 Q2 INTC.pdf, Page 16
+2023 Q3 INTC.pdf, Pages 5, 15 and 17","[1] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.930) | [2] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.383) | [3] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.369) | [4] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.343) | [5] 2023 Q1 INTC.pdf p16 §Note 8 : Acquisitions and (score=0.456) | [6] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.486) | [7] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.453)",✅,2023 Q1 INTC.pdf p16
+"How much did NVIDIA allocate to research and development in Q1 2023, and what were the key areas of focus?",*2023 Q1 NVDA*,"2023 Q1 NVDA.pdf, Pages 3 and 28",[1] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.535) | [2] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.334) | [3] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.648) | [4] 2023 Q1 NVDA.pdf p32 §ITEM 1A. RISK FACTORS (score=0.465) | [5] 2023 Q1 NVDA.pdf p1 §PREAMBLE (score=0.348) | [6] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.569) | [7] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.376),✅,2023 Q1 NVDA.pdf p3
+"For Q3 2023, what proportion of NVIDIA's revenue was generated by its data center business?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 3, 23, 24, 27 and 30",[1] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.995) | [2] 2023 Q3 NVDA.pdf p22 §Note 15 - Segment Informa (score=0.715) | [3] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.351) | [4] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.414) | [5] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.576) | [6] 2023 Q3 NVDA.pdf p25 §ITEM 2. MANAGEMENT’S DISC (score=0.391) | [7] 2023 Q3 NVDA.pdf p16 §Note 10 - Balance Sheet C (score=0.322),✅,2023 Q3 NVDA.pdf p3
+"What legal actions or potential liabilities are revealed in the quarterly reports, and how could they influence Microsoft?",*MSFT*,"2022 Q3 MSFT.pdf, Pages 24, 49, 56 and 57
+2023 Q1 MSFT.pdf, Pages 24 and 60
+2023 Q2 MSFT.pdf, Pages 25, 60 and 61
+2023 Q3 MSFT.pdf, Pages 20, 28, 37, 39 and 55","[1] 2023 Q3 MSFT.pdf p53 §PART II
+Item 1A (score=0.379) | [2] 2023 Q3 MSFT.pdf p53 §PART II
+Item 1A (score=0.487) | [3] 2023 Q2 MSFT.pdf p57 §PART II
+Item 1A (score=0.419) | [4] 2022 Q3 MSFT.pdf p52 §PART II
+Item 1A (score=0.351) | [5] 2023 Q1 MSFT.pdf p58 §PART II
+Item 1A (score=0.755) | [6] 2023 Q3 MSFT.pdf p54 §PART II
+Item 1A (score=0.358) | [7] 2023 Q2 MSFT.pdf p59 §PART II
+Item 1A (score=0.804)",❌,not found
+Does Amazon report any significant new business acquisitions or divestitures in these 10-Qs?,*AMZN*,"2023 Q1 AMZN.pdf, Pages 9, 14, 23, 41 and 44
+2023 Q2 AMZN.pdf, Pages 9, 14 and 22
+2023 Q3 AMZN.pdf, Page 10","[1] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.807) | [2] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.787) | [3] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.756) | [4] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.713) | [5] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.742) | [6] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.715) | [7] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.686)",❌,not found
+What legal proceedings or contingencies are disclosed in these 10-Qs and how might they potentially impact Apple?,*AAPL*,"2022 Q3 AAPL.pdf, Page 23
+2023 Q1 AAPL.pdf, Page 24
+2023 Q2 AAPL.pdf, Pages 14 and 23
+2023 Q3 AAPL.pdf, Pages 14 and 23","[1] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.304) | [2] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.247) | [3] 2022 Q3 AAPL.pdf p3 §Part II
+Item 1. (score=0.455) | [4] 2023 Q3 AAPL.pdf p3 §Part II
+Item 1. (score=0.454) | [5] 2023 Q2 AAPL.pdf p3 §Part II
+Item 1. (score=0.438) | [6] 2023 Q1 AAPL.pdf p3 §Part II
+Item 1. (score=0.431) | [7] 2023 Q3 AAPL.pdf p15 §Note 9 – Commitments and  (score=0.799)",❌,not found
+How does Amazon's R&D expenditure in the most recent quarter compare to previous quarters and what implications might this have?,*AMZN*,"2023 Q3 AMZN.pdf, Pages 4 and 26
+2023 Q2 AMZN.pdf, Pages 4 and 26
+2023 Q1 AMZN.pdf, Pages 4 and 27
+2022 Q3 AMZN.pdf, Pages 4 and 26","[1] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.279) | [2] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.347) | [3] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.277) | [4] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.402) | [5] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.499) | [6] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.497) | [7] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.497)",❌,not found
+What do the inventory levels in Microsoft's Q3 2022 report suggest about their product demand and supply management?,*2022 Q3 MSFT*,"2022 Q3 MSFT.pdf, Pages 5 and 17","[1] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.328) | [2] 2022 Q3 MSFT.pdf p29 §PART I
+Item 1 (score=0.535) | [3] 2022 Q3 MSFT.pdf p28 §PART I
+Item 1 (score=0.298) | [4] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.375) | [5] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.500) | [6] 2022 Q3 MSFT.pdf p17 §NOTE 6 — INVENTORIES (score=0.367) | [7] 2022 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.598)",✅,2022 Q3 MSFT.pdf p17
+"In Apple's Q3 2023 10-Q, analyze how the reported changes in Apple's inventory levels relate to the discussion in their supply chain and logistics section.",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 6, 13 and 22",[1] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.785) | [2] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.797) | [3] 2023 Q3 AAPL.pdf p1 §PREAMBLE (score=0.677) | [4] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.652) | [5] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.577) | [6] 2023 Q3 AAPL.pdf p17 §Item 2.    Management’s D (score=0.560) | [7] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.737),❌,not found
+"What was Intel's R&D expenditure in Q1 2023, and which initiatives were prioritized?",*2023 Q1 INTC*,"2023 Q1 INTC.pdf, Pages 6 and 30",[1] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.750) | [2] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.537) | [3] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.446) | [4] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.957) | [5] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.377) | [6] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.285) | [7] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.412),❌,not found
+Did NVIDIA disclose any significant acquisitions or divestitures in the Q2 2023 10-Q?,*2023 Q2 NVDA*,"2023 Q2 NVDA.pdf, Pages 9, 34, 40, 48 and 49",[1] 2023 Q2 NVDA.pdf p10 §Note 2 - Business Combina (score=0.425) | [2] 2023 Q2 NVDA.pdf p35 §ITEM 1A. RISK FACTORS (score=0.575) | [3] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.554) | [4] 2023 Q2 NVDA.pdf p1 §PREAMBLE (score=0.621) | [5] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.826) | [6] 2023 Q2 NVDA.pdf p46 §ITEM 6. EXHIBITS (score=0.442) | [7] 2023 Q2 NVDA.pdf p19 §Note 13 - Commitments and (score=0.679),❌,not found
+Examine how Intel's effective tax rate in the most recent 10-Q compares with the tax-related discussions in the notes section.,*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 6, 15, 33 and 38","[1] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.557) | [2] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.523) | [3] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.513) | [4] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.640) | [5] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.283) | [6] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.762) | [7] 2023 Q2 INTC.pdf p15 §Note 7 : (score=0.612)",❌,not found
+"From Intel's Q3 2023 10-Q, how do the operational expenses details relate to the insights in the segment reporting?",*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 6, 12, 14, 33 and 37","[1] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.736) | [2] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.732) | [3] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.384) | [4] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.311) | [5] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.447) | [6] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.719) | [7] 2023 Q3 INTC.pdf p11 §Note 2 : (score=1.000)",❌,not found
+"In the latest 10-Q, what effects did currency fluctuations have on Intel's financial statements?",*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 6, 9, 10, 15, 18, 19, 20, 21, 30, 33 and 36","[1] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.488) | [2] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.456) | [3] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.453) | [4] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.218) | [5] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.789) | [6] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.500) | [7] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.277)",✅,2023 Q3 INTC.pdf p21
+What is the effective tax rate reported by Apple in these quarters and how does it compare across the periods?,*AAPL*,"2022 Q3 AAPL.pdf, Page 21
+2023 Q1 AAPL.pdf, Page 22
+2023 Q2 AAPL.pdf, Page 21
+2023 Q3 AAPL.pdf, Page 21",[1] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.453) | [2] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.163) | [3] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.154) | [4] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.156) | [5] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.214) | [6] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.211) | [7] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.463),❌,not found
+What role have foreign exchange rates played in NVIDIA's financial outcomes? Please provide a breakdown for each reporting period.,*NVDA*,"2022 Q3 NVDA.pdf, Pages 18, 20, 21, 34 and 42
+2023 Q1 NVDA.pdf, Pages 8, 20 and 31
+2023 Q2 NVDA.pdf, Pages 9, 21 and 34
+2023 Q3 NVDA.pdf, Pages 9, 21 and 35",[1] 2023 Q2 NVDA.pdf p13 §Note 7 - Cash Equivalents (score=0.373) | [2] 2023 Q3 NVDA.pdf p13 §Note 7 - Cash Equivalents (score=0.398) | [3] 2023 Q2 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.380) | [4] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.366) | [5] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.384) | [6] 2023 Q2 NVDA.pdf p1 §PREAMBLE (score=0.342) | [7] 2023 Q1 NVDA.pdf p1 §PREAMBLE (score=0.329),❌,not found
+Were there any significant acquisitions or divestitures reported by Apple in the Q2 2023 10-Q?,*2023 Q2 AAPL*,"2023 Q2 AAPL.pdf, Pages 9 and 22",[1] 2023 Q2 AAPL.pdf p1 §PREAMBLE (score=0.661) | [2] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.605) | [3] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.702) | [4] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.584) | [5] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.653) | [6] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.660) | [7] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.748),✅,2023 Q2 AAPL.pdf p9
+"From NVIDIA's Q3 2023 10-Q, how does the operational expenses section relate to the insights shared in the segment reporting?",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Page 22",[1] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.336) | [2] 2023 Q3 NVDA.pdf p1 §PREAMBLE (score=0.664) | [3] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.426) | [4] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.301) | [5] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.323) | [6] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.573) | [7] 2023 Q3 NVDA.pdf p22 §Note 15 - Segment Informa (score=0.469),✅,2023 Q3 NVDA.pdf p22
+How has Apple's revenue from iPhone sales fluctuated across quarters?,*AAPL*,"2022 Q3 AAPL.pdf, Pages 10 and 18
+2023 Q1 AAPL.pdf, Pages 10 and 20
+2023 Q2 AAPL.pdf, Pages 10 and 19
+2023 Q3 AAPL.pdf, Pages 10 and 19",[1] 2022 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.780) | [2] 2023 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.584) | [3] 2023 Q1 AAPL.pdf p10 §Note 2 – Revenue (score=0.768) | [4] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.578) | [5] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.447) | [6] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.895) | [7] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.839),✅,2022 Q3 AAPL.pdf p10
+How has Intel's total net sales fluctuated over historical periods?,*INTC*,"2022 Q3 INTC.pdf, Pages 4 and 36
+2023 Q1 INTC.pdf, Pages 5 and 31
+2023 Q2 INTC.pdf, Pages 5, 32 and 33
+2023 Q3 INTC.pdf, Pages 5 and 34",[1] 2023 Q2 INTC.pdf p11 §Note 2 : (score=0.330) | [2] 2023 Q3 INTC.pdf p11 §Note 2 : (score=0.334) | [3] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.328) | [4] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.475) | [5] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.327) | [6] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.459) | [7] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.251),❌,not found
+What are the major factors contributing to the change in Amazon's gross margin in the most recent 10-Q compared to the previous quarters?,*AMZN*,"2022 Q3 AMZN.pdf, Pages 21, 22, 24, 27 and 37
+2023 Q1 AMZN.pdf, Pages 23, 25 and 28
+2023 Q2 AMZN.pdf, Pages 21, 22, 24 and 27
+2023 Q3 AMZN.pdf, Pages 21, 22, 24 and 27","[1] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.401) | [2] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.482) | [3] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.265) | [4] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.480) | [5] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.368) | [6] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.500) | [7] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.500)",✅,2023 Q2 AMZN.pdf p21
+"What risk factors were outlined by Microsoft in the Q3 2023 10-Q, particularly any new or escalating risks?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 51, 52, 53, 54 and 57","[1] 2023 Q3 MSFT.pdf p2 §Item 1A.
+Risk Factors (score=0.623) | [2] 2023 Q3 MSFT.pdf p44 §ITEM 1A. RISK FACTORS (score=0.563) | [3] 2023 Q3 MSFT.pdf p1 §PREAMBLE (score=0.342) | [4] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.211) | [5] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.319) | [6] 2023 Q3 MSFT.pdf p2 §Item 3.
+Quantitative and  (score=0.293) | [7] 2023 Q3 MSFT.pdf p43 §ITEM 3. QUANTITATIVE AND  (score=0.458)",❌,not found
+"For Intel's Q1 2023 10-Q, what is the connection between R&D expenditures and the introduction of new chip technologies or services?",*2023 Q1 INTC*,"2023 Q1 INTC.pdf, Page 3",[1] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.481) | [2] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.525) | [3] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.862) | [4] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=1.000) | [5] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.325) | [6] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.809) | [7] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.400),❌,not found
+How does Apple's R&D expenditure in the most recent quarter compare to previous quarters and what implications might this have?,*AAPL*,"2023 Q3 AAPL.pdf, Pages 4, 16 and 21",[1] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.430) | [2] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.428) | [3] 2023 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.382) | [4] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.445) | [5] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.344) | [6] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.344) | [7] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.606),❌,not found
+"In Intel's Q2 2023 report, analyze the relationship between global market revenues and the discussion on foreign exchange risk.",*2023 Q2 INTC*,"2023 Q2 INTC.pdf, Pages 15, 20, 21 and 42",[1] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.358) | [2] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.617) | [3] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.335) | [4] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.748) | [5] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.672) | [6] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.503) | [7] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.467),✅,2023 Q2 INTC.pdf p21
+"In Q3 2023, what was the revenue breakdown across Amazon's various service offerings?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 3, 16, 19, 20 and 24","[1] 2023 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.349) | [2] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.535) | [3] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.279) | [4] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.360) | [5] 2023 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.654) | [6] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.348) | [7] 2023 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.268)",✅,2023 Q3 AMZN.pdf p3
+"Has there been any significant change in Apple's operating expenses over the reported quarters? If so, what are the key drivers for this change?",*AAPL*,"2022 Q3 AAPL.pdf, Pages 4, 10, 16, 18 and 21
+2023 Q1 AAPL.pdf, Pages 4, 17 and 22
+2023 Q2 AAPL.pdf, Pages 4, 16 and 21
+2023 Q3 AAPL.pdf, Pages 4, 16 and 21",[1] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.624) | [2] 2022 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.695) | [3] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.625) | [4] 2023 Q2 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.619) | [5] 2023 Q3 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.599) | [6] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.530) | [7] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.433),✅,2023 Q1 AAPL.pdf p4
+"In Microsoft's Q3 2023 10-Q, how do the reported shifts in inventory levels correspond with the supply chain management strategies outlined in the report?",*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 12, 17, 18, 19 and 58","[1] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.419) | [2] 2023 Q3 MSFT.pdf p1 §PREAMBLE (score=0.422) | [3] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.466) | [4] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.322) | [5] 2023 Q3 MSFT.pdf p29 §PART I
+Item 1 (score=0.435) | [6] 2023 Q3 MSFT.pdf p31 §PART I
+Item 2 (score=0.516) | [7] 2023 Q3 MSFT.pdf p43 §PART I
+Item 3, 4 (score=0.247)",❌,not found
+"In Q1 2023, how did Microsoft's operating expenses measure up against its revenue?",*2023 Q1 MSFT*,"2023 Q1 MSFT.pdf, Pages 3, 21, 28, 29, 35, 37, 40 and 41","[1] 2023 Q1 MSFT.pdf p40 §PART I
+Item 2 (score=0.471) | [2] 2023 Q1 MSFT.pdf p36 §PART I
+Item 2 (score=0.916) | [3] 2023 Q1 MSFT.pdf p39 §PART I
+Item 2 (score=0.774) | [4] 2023 Q1 MSFT.pdf p37 §PART I
+Item 2 (score=0.726) | [5] 2023 Q1 MSFT.pdf p38 §PART I
+Item 2 (score=0.699) | [6] 2023 Q1 MSFT.pdf p35 §PART I
+Item 2 (score=0.435) | [7] 2023 Q1 MSFT.pdf p29 §PART I
+Item 1 (score=0.403)",✅,2023 Q1 MSFT.pdf p40
+"In Apple's Q1 2023 10-Q, combine the data on Apple's debt instruments from the financial statements with the management discussion to understand their debt management strategy.",*2023 Q1 AAPL*,"2023 Q1 AAPL.pdf, Page 1",[1] 2023 Q1 AAPL.pdf p24 §Item 3.    Defaults Upon  (score=0.651) | [2] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.667) | [3] 2023 Q1 AAPL.pdf p1 §PREAMBLE (score=0.583) | [4] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.766) | [5] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.920) | [6] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.725) | [7] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.758),✅,2023 Q1 AAPL.pdf p1
+What was Apple's cash flow from operating activities as reported in the Q3 2022 10-Q?,*2022 Q3 AAPL*,"2022 Q3 AAPL.pdf, Page 8",[1] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=1.000) | [2] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.527) | [3] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.653) | [4] 2022 Q3 AAPL.pdf p24 §Item 6.    Exhibits (score=0.528) | [5] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.562) | [6] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.554) | [7] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.524),❌,not found
+What do the inventory levels reported in Amazon's Q3 2022 10-Q suggest about their logistics and inventory management?,*2022 Q3 AMZN*,"2022 Q3 AMZN.pdf, Page 21","[1] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.322) | [2] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.223) | [3] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.314) | [4] 2022 Q3 AMZN.pdf p45 §Item 6.
+Exhibits (score=0.226) | [5] 2022 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.842) | [6] 2022 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.350) | [7] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.651)",✅,2022 Q3 AMZN.pdf p21
+"In the second quarter of 2023, what was the primary driver behind the change in Apple's net income?",*2023 Q2 AAPL*,"2023 Q2 AAPL.pdf, Pages 17, 18, 19, 20 and 21",[1] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.538) | [2] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.463) | [3] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.693) | [4] 2023 Q2 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.434) | [5] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=1.000) | [6] 2023 Q2 AAPL.pdf p10 §Note 2 – Revenue (score=0.508) | [7] 2023 Q2 AAPL.pdf p16 §Note 10 – Segment Informa (score=0.635),✅,2023 Q2 AAPL.pdf p17
+"From Amazon's Q3 2023 10-Q, how does the operational expenses section relate to the insights provided in segment reporting?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 7 and 18","[1] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.329) | [2] 2023 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.348) | [3] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.548) | [4] 2023 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.576) | [5] 2023 Q3 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.500) | [6] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.643) | [7] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.606)",✅,2023 Q3 AMZN.pdf p18
+What changes in debt structure or interest expenses did Apple disclose in the Q1 2023 10-Q?,*2023 Q1 AAPL*,"2023 Q1 AAPL.pdf, Pages 11 and 14",[1] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.825) | [2] 2023 Q1 AAPL.pdf p24 §Item 3.    Defaults Upon  (score=0.804) | [3] 2023 Q1 AAPL.pdf p1 §PREAMBLE (score=0.593) | [4] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.962) | [5] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.744) | [6] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.585) | [7] 2023 Q1 AAPL.pdf p9 §Note 1 – Summary of Signi (score=0.636),❌,not found
+What was the gross margin for Apple in the latest 10-Q report?,*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 4 and 20",[1] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.394) | [2] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.914) | [3] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.822) | [4] 2023 Q2 AAPL.pdf p24 §Item 6.    Exhibits (score=0.221) | [5] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.221) | [6] 2022 Q3 AAPL.pdf p24 §Item 6.    Exhibits (score=0.220) | [7] 2023 Q1 AAPL.pdf p25 §Item 6.    Exhibits (score=0.219),❌,not found
+What revenue did Intel report from its semiconductor sales in the most recent quarter?,*2023 Q3 INTC*,"2023 Q3 INTC.pdf, Pages 5 and 34",[1] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.692) | [2] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.552) | [3] 2023 Q2 INTC.pdf p11 §Note 2 : (score=0.359) | [4] 2023 Q3 INTC.pdf p11 §Note 2 : (score=0.349) | [5] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.439) | [6] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.617) | [7] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.286),❌,not found
+Are there any significant alterations in Intel's debt structure or interest costs over these quarters?,*INTC*,"2023 Q1 INTC.pdf, Pages 8, 16, 17 and 35
+2023 Q3 INTC.pdf, Pages 1, 8, 9, 10, 14, 16, 17, 21, 39, 44 and 45","[1] 2022 Q3 INTC.pdf p21 §Note 12 : (score=0.288) | [2] 2023 Q2 INTC.pdf p21 §Note 13 : (score=0.322) | [3] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.333) | [4] 2022 Q3 INTC.pdf p48 §Item 6.
+Exhibits (score=0.500) | [5] 2023 Q2 INTC.pdf p45 §Item 6.
+Exhibits (score=0.500) | [6] 2023 Q3 INTC.pdf p46 §Item 6.
+Exhibits (score=0.497) | [7] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.489)",✅,2023 Q3 INTC.pdf p1
+"Did Apple report any share repurchase activities in its Q3 2023 10-Q, and if so, what was the scale of these buybacks?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Page 18",[1] 2023 Q3 AAPL.pdf p24 §Item 2.    Unregistered S (score=0.564) | [2] 2023 Q3 AAPL.pdf p14 §Note 7 – Shareholders’ Eq (score=1.000) | [3] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.557) | [4] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.560) | [5] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.632) | [6] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.605) | [7] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.510),❌,not found
+"In the latest 10-Q, how does Amazon's discussion on market risks in the financial section align with the risk factors mentioned in the company's business overview?",*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 21 and 34","[1] 2022 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.615) | [2] 2023 Q3 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.500) | [3] 2023 Q1 AMZN.pdf p35 §Item 1A.
+Risk Factors (score=0.493) | [4] 2023 Q2 AMZN.pdf p34 §Item 1A.
+Risk Factors (score=0.492) | [5] 2022 Q3 AMZN.pdf p32 §Item 3.
+Quantitative and  (score=0.468) | [6] 2023 Q2 AMZN.pdf p32 §Item 3.
+Quantitative and  (score=0.435) | [7] 2023 Q1 AMZN.pdf p33 §Item 3.
+Quantitative and  (score=0.431)",✅,2023 Q3 AMZN.pdf p34
+"In NVIDIA's Q3 2023 10-Q, compare the reported changes in inventory levels with the supply chain and logistics strategies discussed in the report.",*2023 Q3 NVDA*,"2023 Q3 NVDA.pdf, Pages 5 and 16",[1] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.801) | [2] 2023 Q3 NVDA.pdf p1 §PREAMBLE (score=0.442) | [3] 2023 Q3 NVDA.pdf p16 §Note 10 - Balance Sheet C (score=0.477) | [4] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.202) | [5] 2023 Q3 NVDA.pdf p47 §ITEM 6. EXHIBITS (score=0.392) | [6] 2023 Q3 NVDA.pdf p3 §ITEM 1. FINANCIAL STATEME (score=0.347) | [7] 2023 Q3 NVDA.pdf p19 §Note 13 - Commitments and (score=0.338),✅,2023 Q3 NVDA.pdf p16
+How has Amazon's total net sales changed over time?,*AMZN*,"2022 Q3 AMZN.pdf, Pages 4, 19, 20, 24 and 30
+2023 Q1 AMZN.pdf, Pages 4, 20, 21, 25 and 31
+2023 Q2 AMZN.pdf, Pages 4, 19, 20, 24 and 30
+2023 Q3 AMZN.pdf, Pages 4, 19, 20, 24 and 30","[1] 2022 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.321) | [2] 2023 Q1 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.471) | [3] 2023 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.308) | [4] 2023 Q2 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.286) | [5] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.536) | [6] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.657) | [7] 2023 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.487)",❌,not found
+"For Amazon's Q1 2023 10-Q, what is the relationship between R&D expenditures and the launch of new services or expansion of existing ones?",*2023 Q1 AMZN*,"2023 Q1 AMZN.pdf, Page 28","[1] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.612) | [2] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.307) | [3] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.331) | [4] 2023 Q1 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.259) | [5] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.251) | [6] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.317) | [7] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.289)",❌,not found
+What are the major factors contributing to the change in Apple's gross margin in the most recent 10-Q compared to the previous quarters?,*AAPL*,"2023 Q3 AAPL.pdf, Page 20",[1] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=1.000) | [2] 2023 Q1 AAPL.pdf p18 §Item 1A of the Company’s  (score=0.349) | [3] 2022 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.955) | [4] 2023 Q1 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.356) | [5] 2023 Q2 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.830) | [6] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.909) | [7] 2022 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.255),❌,not found
+What percentage of Apple's total revenue did the Services segment contribute in Q3 2023?,*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 4, 10, 18 and 19",[1] 2023 Q3 AAPL.pdf p10 §Note 2 – Revenue (score=0.777) | [2] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.845) | [3] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.672) | [4] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.990) | [5] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.574) | [6] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.453) | [7] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.482),✅,2023 Q3 AAPL.pdf p10
+How does the information on legal contingencies in NVIDIA's Q3 2022 10-Q correlate with the financial reserves set aside for these liabilities?,*2022 Q3 NVDA*,"2022 Q3 NVDA.pdf, Page 21",[1] 2022 Q3 NVDA.pdf p1 §PREAMBLE (score=0.370) | [2] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.356) | [3] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.505) | [4] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.364) | [5] 2022 Q3 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.702) | [6] 2022 Q3 NVDA.pdf p21 §Note 15 - Segment Informa (score=0.481) | [7] 2022 Q3 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.388),✅,2022 Q3 NVDA.pdf p21
+"In the first quarter of 2023, what was Amazon's R&D expenditure, and what were the strategic focuses of these investments?",*2023 Q1 AMZN*,"2023 Q1 AMZN.pdf, Pages 4 and 27","[1] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.483) | [2] 2023 Q1 AMZN.pdf p47 §Item 6.
+Exhibits (score=0.497) | [3] 2023 Q1 AMZN.pdf p7 §Note 1 — ACCOUNTING POLIC (score=0.453) | [4] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.245) | [5] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.245) | [6] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.296) | [7] 2023 Q1 AMZN.pdf p1 §PREAMBLE (score=0.419)",❌,not found
+What was the reported revenue from Amazon's e-commerce and AWS segments in the latest quarter?,*2023 Q3 AMZN*,"2023 Q3 AMZN.pdf, Pages 19, 20 and 24","[1] 2023 Q1 AMZN.pdf p19 §Note 8 — SEGMENT INFORMAT (score=0.669) | [2] 2022 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.593) | [3] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.456) | [4] 2023 Q1 AMZN.pdf p24 §Item 1 of Part I, “Financ (score=0.366) | [5] 2023 Q3 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.701) | [6] 2023 Q2 AMZN.pdf p18 §Note 8 — SEGMENT INFORMAT (score=0.638) | [7] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.529)",❌,not found
+"From Apple's Q3 2023 10-Q, how does the information in the operational expenses section relate to the insights shared in Apple's segment reporting?",*2023 Q3 AAPL*,"2023 Q3 AAPL.pdf, Pages 17 and 18",[1] 2023 Q3 AAPL.pdf p24 §Item 5.    Other Informat (score=0.726) | [2] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.601) | [3] 2023 Q3 AAPL.pdf p25 §Item 6.    Exhibits (score=0.702) | [4] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.574) | [5] 2023 Q3 AAPL.pdf p1 §PREAMBLE (score=0.611) | [6] 2023 Q3 AAPL.pdf p4 §Item 1.    Financial Stat (score=0.694) | [7] 2023 Q3 AAPL.pdf p17 §Item 1A of the Company’s  (score=0.728),✅,2023 Q3 AAPL.pdf p17
+"In Q1 2023, how did Intel's operational spending relate to its revenue figures?",*2023 Q1 INTC*,"2023 Q1 INTC.pdf, Pages 6, 12 and 30",[1] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.953) | [2] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.688) | [3] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.838) | [4] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.419) | [5] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.412) | [6] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.488) | [7] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.422),❌,not found
+How did NVIDIA's operating expenses compare to its revenues in Q1 2023?,*2023 Q1 NVDA*,"2023 Q1 NVDA.pdf, Page 28",[1] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.835) | [2] 2023 Q1 NVDA.pdf p3 §ITEM 1.  FINANCIAL STATEM (score=0.633) | [3] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.852) | [4] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.553) | [5] 2023 Q1 NVDA.pdf p23 §ITEM 2. MANAGEMENT’S DISC (score=0.781) | [6] 2023 Q1 NVDA.pdf p11 §Note 6 – Income Taxes (score=0.350) | [7] 2023 Q1 NVDA.pdf p44 §ITEM 6. EXHIBITS (score=0.466),❌,not found
+"In Microsoft's Q3 2022 10-Q, how does the information on legal contingencies connect with financial reserves or provisions made by Microsoft for these liabilities?",*2022 Q3 MSFT*,"2022 Q3 MSFT.pdf, Pages 3, 6, 11, 12, 13, 14, 24, 25 and 38","[1] 2022 Q3 MSFT.pdf p46 §ITEM 1. LEGAL PROCEEDINGS (score=0.702) | [2] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.410) | [3] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.500) | [4] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.287) | [5] 2022 Q3 MSFT.pdf p1 §PREAMBLE (score=0.344) | [6] 2022 Q3 MSFT.pdf p29 §PART I
+Item 1 (score=0.296) | [7] 2022 Q3 MSFT.pdf p24 §NOTE 14 — CONTINGENCIES (score=0.726)",✅,2022 Q3 MSFT.pdf p24
+"For Amazon's Q1 2023, how does the share repurchase information in the financial statements correlate with the equity section in the management discussion?",*2023 Q1 AMZN*,"2023 Q1 AMZN.pdf, Pages 16 and 24","[1] 2023 Q1 AMZN.pdf p29 §Part I, “Financial Statem (score=0.459) | [2] 2023 Q1 AMZN.pdf p16 §Note 6 — STOCKHOLDERS’ EQ (score=0.593) | [3] 2023 Q1 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.371) | [4] 2023 Q1 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.431) | [5] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.750) | [6] 2023 Q1 AMZN.pdf p22 §Item 2.
+Management’s Disc (score=0.678) | [7] 2023 Q1 AMZN.pdf p7 §Note 1 — ACCOUNTING POLIC (score=0.325)",✅,2023 Q1 AMZN.pdf p16
+How has Intel's revenue from chip sales seen variations across the quarters?,*INTC*,"2022 Q3 INTC.pdf, Pages 4 and 36
+2023 Q1 INTC.pdf, Pages 5 and 31
+2023 Q2 INTC.pdf, Pages 5, 32 and 33
+2023 Q3 INTC.pdf, Pages 5 and 34",[1] 2023 Q3 INTC.pdf p1 §PREAMBLE (score=0.898) | [2] 2023 Q2 INTC.pdf p1 §PREAMBLE (score=0.995) | [3] 2023 Q2 INTC.pdf p11 §Note 2 : (score=0.260) | [4] 2023 Q3 INTC.pdf p11 §Note 2 : (score=0.214) | [5] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.791) | [6] 2022 Q3 INTC.pdf p1 §PREAMBLE (score=0.377) | [7] 2023 Q3 INTC.pdf p21 §Note 13 : (score=0.513),❌,not found
+Were there any significant changes in accounting policies reported by Microsoft in the most recent 10-Q?,*2023 Q3 MSFT*,"2023 Q3 MSFT.pdf, Pages 48, 52, 53, 63 and 64",[1] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.498) | [2] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.498) | [3] 2022 Q3 MSFT.pdf p62 §ITEM 6. EXHIBITS (score=0.407) | [4] 2023 Q1 MSFT.pdf p66 §ITEM 6. EXHIBITS (score=0.407) | [5] 2023 Q2 MSFT.pdf p67 §ITEM 6. EXHIBITS (score=0.500) | [6] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.498) | [7] 2023 Q3 MSFT.pdf p60 §ITEM 6. EXHIBITS (score=0.407),❌,not found
+"In the Q2 2023 10-Q, did Amazon make any significant announcements regarding acquisitions or divestments?",*2023 Q2 AMZN*,"2023 Q2 AMZN.pdf, Page 14","[1] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.349) | [2] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.453) | [3] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.537) | [4] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.476) | [5] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.672) | [6] 2023 Q2 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.340) | [7] 2023 Q2 AMZN.pdf p46 §Item 6.
+Exhibits (score=0.406)",❌,not found
+"What legal proceedings or uncertainties are presented in NVIDIA's quarterly reports, and how might they potentially affect the company?",*NVDA*,"2022 Q3 NVDA.pdf, Page 21
+2023 Q1 NVDA.pdf, Page 20
+2023 Q2 NVDA.pdf, Page 21
+2023 Q3 NVDA.pdf, Page 21",[1] 2023 Q1 NVDA.pdf p1 §PREAMBLE (score=0.365) | [2] 2023 Q2 NVDA.pdf p1 §PREAMBLE (score=0.404) | [3] 2022 Q3 NVDA.pdf p1 §PREAMBLE (score=0.377) | [4] 2023 Q3 NVDA.pdf p1 §PREAMBLE (score=0.390) | [5] 2023 Q3 NVDA.pdf p36 §ITEM 1A. RISK FACTORS (score=0.284) | [6] 2022 Q3 NVDA.pdf p19 §Note 13 - Commitments and (score=0.547) | [7] 2023 Q2 NVDA.pdf p19 §Note 13 - Commitments and (score=0.516),❌,not found
+"In the Q1 2023 10-Q, what details did Intel provide about changes to its debt structure and interest expenses?",*2023 Q1 INTC*,"2023 Q1 INTC.pdf, Pages 7, 8, 13, 15, 16, 17, 18, 35 and 39",[1] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.399) | [2] 2023 Q1 INTC.pdf p1 §PREAMBLE (score=0.763) | [3] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.701) | [4] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.694) | [5] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.740) | [6] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.501) | [7] 2023 Q1 INTC.pdf p20 §Note 12 : Contingencies (score=0.408),❌,not found
+What cash flows from operations were disclosed by Amazon in the Q3 2022 10-Q?,*2022 Q3 AMZN*,"2022 Q3 AMZN.pdf, Pages 9, 12 and 22","[1] 2022 Q3 AMZN.pdf p3 §Item 1.
+Financial Stateme (score=0.522) | [2] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.382) | [3] 2022 Q3 AMZN.pdf p21 §Item 2.
+Management’s Disc (score=0.662) | [4] 2022 Q3 AMZN.pdf p7 §Note 1 — ACCOUNTING POLIC (score=0.419) | [5] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.761) | [6] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.387) | [7] 2022 Q3 AMZN.pdf p23 §Item 1 of Part I, “Financ (score=0.535)",❌,not found

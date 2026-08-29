@@ -26,6 +26,55 @@ class ChunkConfig:
 
 
 @dataclass
+class SemanticChunkConfig:
+    """
+    Semantic chunking parameters (Phase 3).
+
+    Uses SemanticChunker (BGE-M3 embeddings) to find topically coherent split
+    points instead of fixed token counts.  The same BGE-M3 model is used for
+    both determining chunk boundaries and embedding chunks for search, so split
+    points align with the retrieval semantic space.
+    """
+    embedding_model: str = field(
+        default_factory=lambda: os.getenv("SEMANTIC_EMBEDDING_MODEL", "BAAI/bge-m3")
+    )
+    # Breakpoint detection: "percentile" (stable) or "standard_deviation" (aggressive)
+    breakpoint_threshold_type: str = field(
+        default_factory=lambda: os.getenv("SEMANTIC_BREAKPOINT_TYPE", "percentile")
+    )
+    # percentile=85 → split at bottom 15% similarity; standard_deviation=1.25 → split >1.25σ below mean
+    breakpoint_threshold_amount: float = field(
+        default_factory=lambda: float(os.getenv("SEMANTIC_BREAKPOINT_AMOUNT", "85"))
+    )
+    # Chunks above token_ceiling get further split by RecursiveCharacterTextSplitter
+    token_ceiling: int = field(
+        default_factory=lambda: int(os.getenv("SEMANTIC_TOKEN_CEILING", "512"))
+    )
+    # Character ceiling for the fallback splitter (~512 tokens)
+    char_ceiling: int = field(
+        default_factory=lambda: int(os.getenv("SEMANTIC_CHAR_CEILING", "2048"))
+    )
+    # Chunks below min_char_size get merged into an adjacent chunk (~128 tokens)
+    min_char_size: int = field(
+        default_factory=lambda: int(os.getenv("SEMANTIC_MIN_CHAR_SIZE", "512"))
+    )
+    # Characters of the previous chunk carried forward as an overlap prefix
+    overlap_chars: int = field(
+        default_factory=lambda: int(os.getenv("SEMANTIC_OVERLAP_CHARS", "256"))
+    )
+    # Overlap used inside the fallback RecursiveCharacterTextSplitter
+    fallback_chunk_overlap: int = field(
+        default_factory=lambda: int(os.getenv("SEMANTIC_FALLBACK_OVERLAP", "256"))
+    )
+    encoding: str = "cl100k_base"
+    # Use fastembed ONNX backend (3-5x faster on CPU) instead of PyTorch.
+    # Set USE_ONNX=false to fall back to HuggingFaceEmbeddings (PyTorch).
+    use_onnx: bool = field(
+        default_factory=lambda: os.getenv("USE_ONNX", "true").lower() != "false"
+    )
+
+
+@dataclass
 class SmartChunkConfig:
     """
     Parent-child chunking parameters (Phase 2).
@@ -68,6 +117,16 @@ class WeaviateConfig:
     smart_collection_name: str = field(
         default_factory=lambda: os.getenv("WEAVIATE_SMART_COLLECTION", "SecDocumentSmart")
     )
+    semantic_collection_name: str = field(
+        default_factory=lambda: os.getenv("WEAVIATE_SEMANTIC_COLLECTION", "DocumentChunk")
+    )
+    # LlamaIndex-managed collections (separate from custom pipeline collections)
+    llamaindex_collection_name: str = field(
+        default_factory=lambda: os.getenv("WEAVIATE_LI_COLLECTION", "SecDocumentLI")
+    )
+    llamaindex_smart_collection_name: str = field(
+        default_factory=lambda: os.getenv("WEAVIATE_LI_SMART_COLLECTION", "SecDocumentSmartLI")
+    )
     batch_size: int = 100
 
 
@@ -104,6 +163,27 @@ class GenerationConfig:
 
 
 @dataclass
+class EvaluationConfig:
+    """
+    LLM settings for the evaluation / judge step.
+
+    Intentionally separate from GenerationConfig so that evaluation uses a
+    stronger model than the one being tested — avoids the 'LLM judging itself'
+    self-serving bias.
+
+    Default judge: gpt-4o  (stronger than gpt-4o-mini used for generation)
+    Override via EVALUATION_MODEL env var.
+    """
+    model: str = field(
+        default_factory=lambda: os.getenv("EVALUATION_MODEL", "gpt-4o")
+    )
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    temperature: float = 0.0
+
+
+@dataclass
 class RetrievalConfig:
     """Vector retrieval settings."""
     top_k: int = field(
@@ -136,7 +216,15 @@ class Config:
     )
     chunk: ChunkConfig = field(default_factory=ChunkConfig)
     smart_chunk: SmartChunkConfig = field(default_factory=SmartChunkConfig)
+    semantic_chunk: SemanticChunkConfig = field(default_factory=SemanticChunkConfig)
     weaviate: WeaviateConfig = field(default_factory=WeaviateConfig)
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
+    evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
+    # Persistent docstore for LlamaIndex AutoMergingRetriever (smart mode)
+    llamaindex_docstore_path: Path = field(
+        default_factory=lambda: Path(
+            os.getenv("LLAMAINDEX_DOCSTORE_PATH", "./storage/llamaindex_docstore")
+        )
+    )

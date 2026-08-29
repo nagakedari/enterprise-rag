@@ -1,0 +1,16 @@
+metric,mean,std,min,max,avg_pct,flagged_count,total,flagged_pct,threshold,note
+exactness,0.439,0.148,0.2369,0.8276,,,,,,
+answer_similarity,0.8475,0.0615,0.6588,0.9458,,,,,,
+correctness,0.5537,0.2143,0.1647,0.9712,,,,,,
+context_precision,0.3464,0.4018,0.0,1.0,,,,,,
+context_recall,0.5652,0.4004,0.0,1.0,,,,,,
+context_relevance,0.49,0.3497,0.0,1.0,,,,,,
+faithfulness,0.8707,0.2052,0.2273,1.0,,,,,,
+hallucination_rate,0.1293,0.2052,0.0,0.7727,,,,,,
+answer_relevance,0.581,0.4472,0.0,0.9988,,,,,,
+factual_error_rate,0.52,0.3881,0.0,1.0,,,,,,
+hallucination_rate,0.1293,,,,12.93,5.0,25.0,20.0,0.2,1 – faithfulness (context-grounded); lower is better
+factual_error_rate,0.52,,,,52.0,20.0,25.0,80.0,0.2,GEval claim audit vs golden answer; lower is better
+_meta_input_file,/Users/manjusri/learning/generative_ai/KG-RAG-datasets/sec-10-q/data/v1/qna_data_gold_page_present_25.csv,,,,,,,,,
+_meta_run_tag,custom_parent_child_hybrid_a0.25_k10_llmfilters_cross_encoderrerank_rt6,,,,,,,,,
+_meta_n_questions,25,,,,,,,,,

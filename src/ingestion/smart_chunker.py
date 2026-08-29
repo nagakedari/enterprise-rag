@@ -2,40 +2,37 @@
 Parent-Child document chunker for SEC 10-Q filings (Phase 2).
 
 Strategy:
-    1.  Split each document into parent chunks (~1000 tokens) using
-        RecursiveCharacterTextSplitter with SEC-aware separators:
-            "\n\nITEM "  →  "\n\nPART "  →  "\n\nNOTE "
-            "\n\n"  →  "\n"  →  ". "  →  " "  →  ""
-        Trying SEC section boundaries first keeps ITEM / NOTE sections
-        intact as much as possible within the token budget.
-    2.  Sub-split each parent into child chunks (~300 tokens) using a
-        tighter RecursiveCharacterTextSplitter (no SEC separators needed
-        since the parent is already section-scoped).
-    3.  Each child chunk carries:
-            text           - child text (small, ~300 tokens) → embedded
-            parent_text    - parent text (large, ~1000 tokens) → LLM context
-            parent_id      - deterministic UUID; deduplicated at retrieval
-            section_title  - nearest section header found in the parent text
+    1.  Detect SEC section boundaries (ITEM / PART / NOTE headers) in the full
+        document text and split there FIRST — no token limit at this stage.
+        This guarantees that no parent chunk ever crosses a section boundary.
+    2.  Within each section, apply a token-count-limited split to produce
+        parent chunks (~1000 tokens).  Paragraph and sentence breaks are
+        preferred over mid-sentence cuts.
+    3.  Sub-split each parent into child chunks (~300 tokens) for embedding.
+    4.  Each child carries:
+            section_title  - the SEC section it belongs to (e.g. "ITEM 1A. RISK FACTORS")
+            parent_text    - the parent block text returned to the LLM
             context_window - "[COMPANY QUARTER YEAR] Section: TITLE\\n\\nchild_text"
-                             This is what gets embedded (not raw child text),
-                             so the vector encodes company + section context.
+                             Embedded (not stored in Weaviate) so the vector
+                             encodes company + section context.
 
-Why this helps retrieval:
-    SEC filing body text rarely mentions the company name or the filing
-    period inline.  Prepending "[AAPL Q2 2023] Section: RISK FACTORS"
-    means a query like "Apple Q2 2023 liquidity risk" will score higher
-    against the right chunks even when the body text never says "Apple".
+Why section-first beats token-first:
+    A token-count-first splitter can (a) merge two short adjacent sections into
+    one parent (mixing Risk Factors with Properties) or (b) split a long section
+    mid-paragraph, leaving the section header in one parent and the substance in
+    the next.  Splitting at section boundaries first ensures every parent belongs
+    to exactly one logical section.
 """
+import bisect
 import logging
 import re
 import uuid
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import tiktoken
-from langchain_core.documents import Document
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 
 from src.config import SmartChunkConfig
@@ -54,42 +51,101 @@ class SmartTextChunk:
     parent_id: str          # deterministic UUID for deduplication at retrieval time
     chunk_index: int        # global child chunk index within the document
     token_count: int        # child chunk token count
-    page_num: int           # page this chunk originates from
+    page_num: int           # page where this chunk's section starts
     file_name: str          # PDF filename  e.g. "2023 Q2 AAPL.pdf"
     source_file: str        # same as file_name; kept for pipeline compatibility
     company: str
     quarter: str
     year: int
-    section_title: str      # nearest preceding section header ("" if none)
+    section_title: str      # SEC section header (e.g. "ITEM 1A. RISK FACTORS")
     last_updated_date: str  # ISO-8601 UTC timestamp of ingestion run
-    context_window: str     # enriched text that gets embedded (not stored in Weaviate)
+    context_window: str     # enriched text embedded (not stored in Weaviate)
 
 
-# ── Section title detection ────────────────────────────────────────────────────
+# ── Section boundary detection ─────────────────────────────────────────────────
 
-# Matches: ITEM 1A. / PART II / NOTE 5 at the start of a line
-_HEADER_RE = re.compile(
-    r"^(?:ITEM\s+\d+[A-Z]?\.?|PART\s+[IVX]+|NOTE\s+\d+)",
-    re.IGNORECASE | re.MULTILINE,
+# Matches ITEM / PART / NOTE headers at the start of a line.
+# Captures the full first line (up to 100 chars) as the section title.
+_SECTION_HEADER_RE = re.compile(
+    r"^((?:ITEM|Item)\s+\d+[A-Z]?\.?\s*[^\n]{0,100}"
+    r"|(?:PART|Part)\s+[IVX]+\s*[^\n]{0,100}"
+    r"|(?:NOTE|Note)\s+\d+[^\n]{0,100})",
+    re.MULTILINE,
 )
-# Fallback: ALL-CAPS lines of 5–80 chars (e.g. "RISK FACTORS")
-_ALLCAPS_RE = re.compile(r"^[A-Z][A-Z\s\-]{4,}$", re.MULTILINE)
 
 
-def _extract_section_title(text: str) -> str:
+def _find_section_offsets(text: str) -> List[Tuple[int, str]]:
+    """Return sorted (char_offset, title) pairs for each SEC section header."""
+    results: List[Tuple[int, str]] = []
+    for m in _SECTION_HEADER_RE.finditer(text):
+        results.append((m.start(), m.group(1).strip()))
+    return results
+
+
+def _split_into_sections(text: str) -> List[Tuple[str, str, int]]:
     """
-    Return the last section header found in *text*, or ''.
-    Prefers explicit ITEM/PART/NOTE patterns; falls back to ALL-CAPS lines.
+    Split *text* at SEC section boundaries.
+
+    Returns a list of (section_text, section_title, start_char_offset) triples.
+    Text before the first header is labelled "PREAMBLE".
+    Falls back to a single block with an empty title if no headers are found.
     """
-    matches = list(_HEADER_RE.finditer(text))
-    if matches:
-        return matches[-1].group().strip()
-    caps = [
-        m.group().strip()
-        for m in _ALLCAPS_RE.finditer(text)
-        if 5 <= len(m.group().strip()) <= 80
-    ]
-    return caps[-1] if caps else ""
+    offsets = _find_section_offsets(text)
+    if not offsets:
+        return [(text, "", 0)]
+
+    sections: List[Tuple[str, str, int]] = []
+
+    if offsets[0][0] > 0:
+        preamble = text[: offsets[0][0]].strip()
+        if preamble:
+            sections.append((preamble, "PREAMBLE", 0))
+
+    for i, (start, title) in enumerate(offsets):
+        end = offsets[i + 1][0] if i + 1 < len(offsets) else len(text)
+        section_text = text[start:end].strip()
+        if section_text:
+            sections.append((section_text, title, start))
+
+    return sections
+
+
+# ── Page number lookup ─────────────────────────────────────────────────────────
+
+def _build_page_index(
+    doc: ParsedDocument,
+) -> Tuple[str, List[int], List[int]]:
+    """
+    Concatenate all non-empty page texts separated by '\\n\\n' and record where
+    each page begins in the resulting string.
+
+    Returns:
+        full_text   - complete document text as one string
+        page_starts - sorted char offsets of each page's start
+        page_nums   - page numbers corresponding to each entry in page_starts
+    """
+    parts: List[str] = []
+    page_starts: List[int] = []
+    page_nums: List[int] = []
+    offset = 0
+    for page in doc.pages:
+        if not page.text.strip():
+            continue
+        page_starts.append(offset)
+        page_nums.append(page.page_num)
+        parts.append(page.text)
+        offset += len(page.text) + 2   # '\n\n' separator added below
+
+    full_text = "\n\n".join(parts)
+    return full_text, page_starts, page_nums
+
+
+def _page_at(char_offset: int, page_starts: List[int], page_nums: List[int]) -> int:
+    """Return the page number for a given character offset (binary search)."""
+    if not page_starts:
+        return 1
+    idx = bisect.bisect_right(page_starts, char_offset) - 1
+    return page_nums[max(0, idx)]
 
 
 # ── Context window builder ─────────────────────────────────────────────────────
@@ -103,10 +159,7 @@ def _build_context_window(
 ) -> str:
     """
     Prepend filing identity and section label to the child text.
-
-    This string is what gets embedded — not the raw child text.  The prefix
-    anchors the vector to the correct company, period, and section so that
-    queries naming the company or section retrieve better matches.
+    This string is what gets embedded — not the raw child text.
     """
     header = f"[{company} {quarter} {year}]"
     if section_title:
@@ -130,50 +183,40 @@ def chunk_document_smart(
     """
     Produce SmartTextChunks for a single ParsedDocument.
 
-    Args:
-        doc:               Parsed PDF document.
-        config:            Smart chunking parameters.
-        last_updated_date: ISO-8601 UTC timestamp to stamp on every chunk.
-                           Defaults to the current UTC time if not provided.
-                           Pass a single value from the pipeline so all chunks
-                           in one ingestion run share the same timestamp.
-
     Flow:
-        pages  →  parent split  →  child split per parent
-        → section title detection per parent
-        → context_window enrichment per child
+        pages → full_text → section split (no token cap)
+              → parent split within each section (token-capped)
+              → child split within each parent
+              → context_window enrichment per child
     """
     if last_updated_date is None:
         last_updated_date = datetime.now(timezone.utc).isoformat()
     enc = tiktoken.get_encoding(config.encoding)
 
-    # Parent splitter: SEC section boundaries tried first, then progressively
-    # finer boundaries.  chunk_overlap keeps sentence context at boundaries.
+    # ── 1. Build full text and page boundary index ────────────────────────────
+    full_text, page_starts, page_nums = _build_page_index(doc)
+    if not full_text.strip():
+        return []
+
+    # ── 2. Split at SEC section boundaries (no token limit) ──────────────────
+    sections = _split_into_sections(full_text)
+
+    logger.debug(
+        "SectionSplit '%s' → %d sections: %s",
+        doc.source_file,
+        len(sections),
+        [title for _, title, _ in sections],
+    )
+
+    # ── 3. Within each section, split into parent chunks ─────────────────────
+    # Generic separators only — SEC headers were consumed in step 2.
     parent_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         encoding_name=config.encoding,
         chunk_size=config.parent_max_tokens,
         chunk_overlap=config.parent_overlap_tokens,
-        # separators=[
-        #     "\n\nITEM ", "\n\nPART ", "\n\nNOTE ",
-        #     "\n\n", "\n", ". ", " ", "",
-        # ],
-        separators = [
-            "\n\nPART ",      # Highest level (Part I, II)
-            "\n\nItem ",      # Standard SEC Item headers
-            "\n\nITEM ",      # Catch-all for uppercase versions
-            "\n\nNote ",      # For the detailed Financial Notes
-            "\n\nNOTE ",      # Catch-all for uppercase Notes
-            "\n\nEXHIBIT ",   # For the legal/signature sections
-            "\n\n",           # Paragraphs
-            "\n",             # Line breaks
-            ". ",             # Sentences
-            " ",              # Words
-            ""                # Characters
-        ]
+        separators=["\n\n", "\n", ". ", " ", ""],
     )
 
-    # Child splitter: finer splits within each parent; no need for SEC separators
-    # since the parent is already section-scoped.
     child_splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
         encoding_name=config.encoding,
         chunk_size=config.child_max_tokens,
@@ -181,62 +224,65 @@ def chunk_document_smart(
         separators=["\n\n", "\n", ". ", " ", ""],
     )
 
-    # One LangChain Document per page preserves page_num in metadata
-    lc_docs = [
-        Document(page_content=page.text, metadata={"page_num": page.page_num})
-        for page in doc.pages
-        if page.text.strip()
-    ]
-
-    parent_docs = parent_splitter.split_documents(lc_docs)
-
     chunks: List[SmartTextChunk] = []
     child_index = 0
-    current_section_title = ""
+    total_parents = 0
 
-    for parent_idx, parent_doc in enumerate(parent_docs):
-        parent_text = parent_doc.page_content
-        page_num = int(parent_doc.metadata.get("page_num", 1))
+    for section_idx, (section_text, section_title, start_offset) in enumerate(sections):
+        if not section_text.strip():
+            continue
 
-        # Update running section title from this parent's content
-        detected = _extract_section_title(parent_text)
-        if detected:
-            current_section_title = detected
+        section_page = _page_at(start_offset, page_starts, page_nums)
+        parent_texts = parent_splitter.split_text(section_text)
+        total_parents += len(parent_texts)
 
-        parent_id = str(
-            uuid.uuid5(
-                uuid.NAMESPACE_DNS,
-                f"{doc.source_file}::parent::{parent_idx}",
+        # Track position within section_text so each parent gets its own page,
+        # not the section-header page (which may be many pages before the parent's text).
+        parent_cursor = 0
+
+        for parent_idx, parent_text in enumerate(parent_texts):
+            parent_id = str(
+                uuid.uuid5(
+                    uuid.NAMESPACE_DNS,
+                    f"{doc.source_file}::section::{section_idx}::parent::{parent_idx}",
+                )
             )
-        )
 
-        child_texts = child_splitter.split_text(parent_text)
+            # Locate this parent inside the section to find its actual page.
+            found_at = section_text.find(parent_text, parent_cursor)
+            if found_at >= 0:
+                parent_page = _page_at(start_offset + found_at, page_starts, page_nums)
+                parent_cursor = found_at + 1  # advance past start; overlap is fine
+            else:
+                parent_page = section_page  # fallback: section start page
 
-        for child_text in child_texts:
-            context_window = _build_context_window(
-                child_text, doc.company, doc.quarter, doc.year, current_section_title
-            )
-            chunks.append(SmartTextChunk(
-                text=child_text,
-                parent_text=parent_text,
-                parent_id=parent_id,
-                chunk_index=child_index,
-                token_count=_token_len(child_text, enc),
-                page_num=page_num,
-                file_name=Path(doc.source_file).name,
-                source_file=doc.source_file,
-                company=doc.company,
-                quarter=doc.quarter,
-                year=doc.year,
-                section_title=current_section_title,
-                last_updated_date=last_updated_date,
-                context_window=context_window,
-            ))
-            child_index += 1
+            child_texts = child_splitter.split_text(parent_text)
+
+            for child_text in child_texts:
+                context_window = _build_context_window(
+                    child_text, doc.company, doc.quarter, doc.year, section_title
+                )
+                chunks.append(SmartTextChunk(
+                    text=child_text,
+                    parent_text=parent_text,
+                    parent_id=parent_id,
+                    chunk_index=child_index,
+                    token_count=_token_len(child_text, enc),
+                    page_num=parent_page,
+                    file_name=Path(doc.source_file).name,
+                    source_file=doc.source_file,
+                    company=doc.company,
+                    quarter=doc.quarter,
+                    year=doc.year,
+                    section_title=section_title,
+                    last_updated_date=last_updated_date,
+                    context_window=context_window,
+                ))
+                child_index += 1
 
     logger.info(
-        "SmartChunker '%s' → %d parent chunks → %d child chunks",
-        doc.source_file, len(parent_docs), len(chunks),
+        "SmartChunker '%s' → %d sections → %d parents → %d child chunks",
+        doc.source_file, len(sections), total_parents, len(chunks),
     )
     return chunks
 
