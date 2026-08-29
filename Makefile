@@ -1,5 +1,5 @@
 # ── sec-rag-demo convenience targets ────────────────────────────────────────
-.PHONY: help up down logs ps ingest ingest-clean venv install link-docs
+.PHONY: help up down logs ps ingest ingest-clean venv install link-docs api ui ui-install
 
 DOCS_SRC ?= /Users/manjusri/learning/generative_ai/KG-RAG-datasets/sec-10-q/data/v1/docs
 
@@ -38,6 +38,15 @@ ingest: ## Run ingestion pipeline locally (needs Weaviate running)
 
 ingest-clean: ## Drop collection and re-ingest from scratch
 	.venv/bin/python scripts/run_ingestion.py --recreate
+
+api: ## Run the FastAPI server locally (uvicorn --reload, port 8000)
+	.venv/bin/uvicorn src.api.main:app --reload --port 8000
+
+ui: ## Run the Vite dev server for the evaluation frontend (port 5173)
+	cd frontend && npm run dev
+
+ui-install: ## Install frontend dependencies
+	cd frontend && npm install
 
 # ── Setup ─────────────────────────────────────────────────────────────────────
 link-docs: ## Symlink the SEC corpus into ./data/docs
