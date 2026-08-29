@@ -1,27 +1,42 @@
-# sec-rag-demo
+# Enterprise RAG — SEC 10-Q Filing Q&A
 
-**Phase 1 – Demo-grade RAG: Document Ingestion Pipeline**
+A retrieval-augmented question-answering system over SEC 10-Q quarterly
+filings. What started as a bare-minimum demo pipeline (PDF → fixed-size
+chunks → OpenAI embeddings → Weaviate) has grown into a system with multiple
+interchangeable chunking, retrieval, reranking, and diversity-selection
+strategies, a full RAGAS + custom-metric evaluation harness, and a web UI for
+running and comparing evaluations.
 
-This repo is the starting point of a phased journey from a bare-minimum demo RAG to a production-grade system. Each phase will intentionally expose you to real problems and trade-offs.
+**This README covers what the project is and how to run it.** For a deep
+dive into *which* chunking/retrieval/reranking strategy performs best and
+why — including actual evaluation numbers — see
+**[RAG_STRATEGIES.md](RAG_STRATEGIES.md)**.
 
 ---
 
-## What this phase builds
+## What's in here
 
-| Component | Choice | Why / Known limitation |
-|-----------|--------|----------------------|
-| PDF parsing | PyMuPDF | Fast, good text extraction; **tables come out as plain text** (Phase 2 fix) |
-| Chunking | Token-based, 500-800 tokens, 100 overlap | Simple & predictable; **sentence splitter is regex-only** (Phase 2 fix) |
-| Embeddings | OpenAI `text-embedding-3-small` | High quality; **every re-ingest costs API $** (Phase 2: cache / dedupe) |
-| Vector DB | Weaviate (manual vectors) | Full visibility; **no filtering by metadata yet** (Phase 2 fix) |
-| Orchestration | Airflow (LocalExecutor) | Simple; **single-node, no parallelism** (Phase 2 fix) |
+- **Ingestion** — PDF parsing (PyMuPDF), three interchangeable chunking
+  strategies, OpenAI + local (BGE-M3) embeddings, Weaviate storage.
+  Orchestrated via Airflow or run directly as a CLI.
+- **Retrieval** — semantic and hybrid (BM25 + vector) search, two engines
+  (a custom Weaviate client and a LlamaIndex-based implementation), optional
+  reranking (LLM or local cross-encoder), and post-rerank diversity selection
+  (MMR / metadata-slot / source-cap) for multi-filing questions.
+- **Generation** — OpenAI chat completion over retrieved context.
+- **Evaluation** — a CLI (`scripts/run_evaluation.py`) that runs the full
+  pipeline against a golden Q&A dataset and scores it with 10 metrics (RAGAS
+  + custom GEval), plus a **FastAPI backend + React UI** for picking an
+  evaluation configuration, checking whether it's already been run, and
+  launching/watching/canceling new runs.
 
 ---
 
 ## Prerequisites
 
-- Docker Desktop running
+- Docker Desktop running (for Weaviate + Airflow)
 - Python 3.11+
+- Node.js 18+ (only needed for the evaluation web UI)
 - An OpenAI API key
 
 ---
@@ -30,7 +45,7 @@ This repo is the starting point of a phased journey from a bare-minimum demo RAG
 
 ```bash
 # 1. Clone / navigate to this repo
-cd sec-rag-demo
+cd enterprise-rag
 
 # 2. Create your .env
 make env
@@ -47,36 +62,76 @@ make up
 # 5. Trigger the ingestion DAG from the UI — or via CLI:
 make trigger
 
-# ── OR run locally without Airflow ──────────────────────────────
+# ── OR run ingestion locally without Airflow ────────────────────
 make venv && make install
 make ingest
 ```
+
+### Running an evaluation
+
+```bash
+# CLI — see --help for every chunking/retrieval/reranking/diversity flag
+.venv/bin/python scripts/run_evaluation.py --samples 25
+
+# OR the web UI (pick parameters, check for existing results, run/re-run,
+# watch live progress) — needs Weaviate running (`make up`) and OPENAI_API_KEY set
+make api          # FastAPI backend on :8000
+make ui-install   # first time only
+make ui           # React dev server on :5173
+```
+
+See [RAG_STRATEGIES.md](RAG_STRATEGIES.md) for what every flag/parameter
+actually does and how different configurations have scored.
 
 ---
 
 ## Project structure
 
 ```
-sec-rag-demo/
+enterprise-rag/
 ├── docker-compose.yml        # Weaviate + Airflow stack
-├── requirements.txt          # Python dependencies
-├── .env.example              # Environment variable template
-├── Makefile                  # Convenience commands
+├── requirements.txt          # Python dependencies (backend + ingestion + eval)
+├── .env.example               # Environment variable template
+├── Makefile                  # Convenience commands (see `make help`)
+├── RAG_STRATEGIES.md          # Strategy deep-dive + evaluation results
 │
 ├── src/
-│   ├── config.py             # All config read from env vars
-│   └── ingestion/
-│       ├── pdf_parser.py     # PDF → ParsedDocument (page text + metadata)
-│       ├── chunker.py        # ParsedDocument → TextChunk list
-│       ├── embedder.py       # TextChunk texts → OpenAI vectors
-│       ├── weaviate_store.py # Schema creation + batch upsert
-│       └── pipeline.py       # Orchestrates all four steps
+│   ├── config.py              # All config, read from env vars
+│   ├── ingestion/
+│   │   ├── pdf_parser.py       # PDF → ParsedDocument (page text + metadata)
+│   │   ├── chunker.py          # Basic token-based chunking
+│   │   ├── smart_chunker.py    # Parent-child chunking (section-aware)
+│   │   ├── semantic_chunker.py # Semantic chunking (BGE-M3 boundaries)
+│   │   ├── llamaindex_pipeline.py  # LlamaIndex-native ingestion pipeline
+│   │   ├── embedder.py         # OpenAI embedding calls
+│   │   ├── weaviate_store.py   # Schema creation + batch upsert
+│   │   └── pipeline.py         # Orchestrates the custom ingestion pipeline
+│   ├── retrieval/
+│   │   ├── retriever.py         # Custom Weaviate retriever (+ per-filing retrieval)
+│   │   ├── llamaindex_retriever.py  # LlamaIndex-based retriever
+│   │   ├── reranker.py          # LLM / cross-encoder reranking + diversity selection
+│   │   └── query_filters.py     # Company/year/quarter extraction from a question
+│   ├── generation/
+│   │   └── generator.py         # Answer generation from retrieved chunks
+│   ├── evaluation/
+│   │   ├── evaluator.py         # Orchestrates all 10 metrics (RAGAS + custom)
+│   │   ├── metrics.py           # Custom metric implementations
+│   │   └── run_tag.py           # Shared run-tag naming, used by CLI + API
+│   └── api/
+│       ├── main.py              # FastAPI app (chat endpoint + evaluation router)
+│       ├── models.py            # Pydantic request/response models
+│       ├── evaluation_routes.py # Evaluation HTTP endpoints
+│       └── evaluation_service.py # History scan/lookup + subprocess job runner
+│
+├── frontend/                  # React + TypeScript evaluation UI (Vite)
 │
 ├── dags/
-│   └── sec_ingestion_dag.py  # Airflow DAG (4 tasks, manual trigger)
+│   └── sec_ingestion_dag.py   # Airflow DAG (4 tasks, manual trigger)
 │
 └── scripts/
-    └── run_ingestion.py      # CLI entrypoint (no Airflow needed)
+    ├── run_ingestion.py        # Ingestion CLI entrypoint (no Airflow needed)
+    ├── run_evaluation.py       # Evaluation CLI entrypoint
+    └── inspect_weaviate.py     # Quick Weaviate collection inspector
 ```
 
 ---
@@ -96,56 +151,33 @@ validate_docs → parse_and_chunk → embed_and_store → verify_ingestion
 
 ---
 
-## Chunking strategy
+## Weaviate collections
 
-```
-min_tokens  = 500
-max_tokens  = 800
-overlap     = 100   # last ~100 tokens of chunk N become the start of chunk N+1
-tokenizer   = cl100k_base  (same as OpenAI embedding models)
-```
+Each chunking strategy and engine writes to its own collection, so they
+coexist and can be evaluated side by side (see
+[RAG_STRATEGIES.md](RAG_STRATEGIES.md) for how they compare):
 
-Chunks are formed greedily by accumulating sentence-split segments until the
-next segment would exceed `max_tokens`. The overlap is applied by rewinding the
-segment pointer by ~100 tokens before starting the next chunk.
+| Collection | Written by |
+|---|---|
+| `SecDocument` | Custom pipeline, basic chunking |
+| `SecDocumentSmart` | Custom pipeline, parent-child chunking |
+| `DocumentChunk` | Custom pipeline, semantic chunking |
+| `SecDocumentLI` / `SecDocumentSmartLI` | LlamaIndex-native pipeline (basic / parent-child) |
 
----
-
-## Known Phase-1 limitations (roadmap for Phase 2)
-
-1. **Table extraction** — tables are extracted as raw text. Financial tables
-   lose structure. → Phase 2: pdfplumber with table detection.
-
-2. **Regex sentence splitting** — breaks on `.` inside numbers and tickers.
-   → Phase 2: spaCy or NLTK sentence tokeniser.
-
-3. **No embedding cache** — every run re-calls the OpenAI API.
-   → Phase 2: hash-based deduplication before embedding.
-
-4. **No metadata filtering** — Weaviate queries are pure vector search.
-   → Phase 2: add `where` filters on company / quarter / year.
-
-5. **Sequential Airflow** — single LocalExecutor, one task at a time.
-   → Phase 2: parallel fan-out per document with dynamic task mapping.
-
-6. **No retrieval / QA layer yet** — this phase only covers ingestion.
-   → Phase 2: add a simple retrieval + answer generation module.
+Inspect any collection with `.venv/bin/python scripts/inspect_weaviate.py`.
 
 ---
 
-## Weaviate schema
+## Known limitations
 
-Collection: `SecDocument`
+- Evaluation-run latency isn't tracked anywhere in the pipeline.
+- The evaluation web UI's job tracking is in-memory only — it doesn't survive
+  a backend restart (results on disk are unaffected; only live-progress state
+  is lost). Don't run the API with `--reload` or multiple workers while a job
+  is active.
+- `DOCS_PATH` / the golden Q&A dataset path currently point at a corpus
+  outside this repo — adjust `.env` and `scripts/run_evaluation.py --input`
+  for your own dataset.
 
-| Property | Type | Example |
-|----------|------|---------|
-| company | TEXT | `AAPL` |
-| quarter | TEXT | `Q2` |
-| year | INT | `2023` |
-| source_file | TEXT | `2023 Q2 AAPL.pdf` |
-| chunk_index | INT | `0` |
-| chunk_text | TEXT | `Apple Inc. reported … ` |
-| page_start | INT | `3` |
-| page_end | INT | `5` |
-| token_count | INT | `612` |
-| _vector_ | float[] | `[0.023, -0.11, …]` (1536-dim) |
+See [RAG_STRATEGIES.md's Caveats section](RAG_STRATEGIES.md#caveats--how-to-read-this)
+for evaluation-methodology caveats (sample sizes, judge-model choice, etc.).

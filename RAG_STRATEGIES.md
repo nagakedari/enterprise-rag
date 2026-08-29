@@ -69,12 +69,15 @@ Generation model (context, not an embedding): `gpt-4o-mini`, `temperature=0.0`.
 
 **Judge-model note:** `EvaluationConfig` defaults to `gpt-4o` in code, and the
 comment explicitly explains why — *"avoids the 'LLM judging itself'
-self-serving bias"* by using a stronger model than the `gpt-4o-mini` generator.
-In this repo's actual `.env`, `EVALUATION_MODEL=gpt-4o-mini` overrides that
-default, so the recorded evaluation runs use the **same model as both
-generator and judge** — worth knowing when interpreting the LLM-scored metrics
-below, since self-judging bias is a real risk for `correctness`,
-`context_relevance`, `answer_relevance`, and `factual_error_rate`.
+self-serving bias"* by using a stronger model than the generator. `.env` sets
+`GENERATION_MODEL` unset (code default `gpt-4o-mini`) and
+`EVALUATION_MODEL=gpt-4o` explicitly, so generation and judging are now
+genuinely **different models** — the self-judging bias risk this design was
+meant to avoid no longer applies to `correctness`, `context_relevance`,
+`answer_relevance`, or `factual_error_rate`. (Earlier revisions of this repo
+had `.env` overriding `EVALUATION_MODEL` down to `gpt-4o-mini`, which
+collapsed generator and judge into the same model — that override has since
+been removed.)
 
 ---
 
@@ -104,6 +107,7 @@ Both support the same two **retrieval modes**:
 | `rerank_top_k` | Chunks kept *after* reranking (over-fetch `top_k*3` → rerank → keep this many) | 5, 6 | `--rerank-top-k` |
 | `filter_mode` | How company/year/quarter are extracted from the question | `llm` (default, one `gpt-4o-mini` call/question), `regex` (curated 18-ticker alias table + ordinal/month/quarter patterns, zero LLM cost) | `--filter-mode` |
 | `chunking_strategy` × `retrieval_mode` × `engine` | Which collection/pipeline is queried | basic / parent_child / semantic × semantic / hybrid × custom / llamaindex | `--chunking-strategy`, `--retrieval-mode`, `--engine` |
+| `diversity_mode`, `mmr_lambda`, `per_filing`, `chunks_per_filing`, `max_per_entity` | Post-rerank chunk-selection strategy and per-filing retrieval — see [§5 Diversity selection strategies](#5-diversity-selection-strategies) and [§7 Fix 2](#7-fix-2--per-filing-retrieval-for-temporal-questions) | `none` (default), `mmr` (λ 0.4–0.5 tried), `metadata_slots`, `source_cap`; `per_filing` on/off | `--diversity-mode`, `--mmr-lambda`, `--per-filing`, `--chunks-per-filing`, `--max-per-entity` |
 
 **Why the alpha tuning happened:** SEC 10-Q questions are heavily
 token-specific ("EPS", "Item 7A", ticker symbols, dollar figures) — vocabulary
@@ -284,7 +288,12 @@ Does not hurt faithfulness (the LLM still cites all sources; it just labels
 off-period facts as background). Neutral to the ~7 retrieval-failure cases
 and the ~10 analytical-answer cases.
 
-**Status:** Implemented. Evaluation run pending.
+**Status:** Implemented. First post-fix run (`..._rt6_mmr_l0.4_pf`, timestamped
+right after this prompt change) shows faithfulness at 0.938 and hallucination
+at 0.062 — the best of any recorded run — but that run also combines MMR and
+per-filing retrieval simultaneously, so the improvement can't be isolated to
+the prompt change alone. A clean A/B (same retrieval config, prompt-only
+toggle) is still pending.
 
 ---
 
@@ -338,7 +347,11 @@ candidate pool. Source_cap then enforces an upper bound so no single period
 monopolises the final `rerank_top_k` slots after the cross-encoder scores them.
 
 **Status:** Implemented. Selectable via `--per-filing` / `--chunks-per-filing`
-CLI flags and the React UI "Per-filing retrieval" checkbox. Evaluation run pending.
+CLI flags and the React UI "Per-filing retrieval" checkbox. One run so far
+combines it with MMR (`..._rt6_mmr_l0.4_pf`, see the results table) — context_recall
+0.628 and correctness 0.582 (best correctness of any recorded run), roughly on
+par with MMR alone on recall/faithfulness. An isolated per-filing-only run
+(no MMR) to separate its individual effect is still pending.
 
 ---
 
@@ -362,7 +375,8 @@ they need as input:
 | | `factual_error_rate` | Custom GEval — decomposes answer into atomic claims, checks each against the golden answer | Yes |
 
 **RAGAS wiring:** judge LLM = `ChatOpenAI(model=config.evaluation.model)`
-(effectively `gpt-4o-mini`, see the judge-model note above); embeddings for
+(`gpt-4o` per current `.env`, see the judge-model note above — a different,
+stronger model than the `gpt-4o-mini` generator); embeddings for
 `AnswerCorrectness`'s semantic component = `text-embedding-3-small`; throttled
 to `max_workers=4` (down from RAGAS's default 16) because higher concurrency
 caused silently-dropped OpenAI calls → NaN metrics.
@@ -371,6 +385,14 @@ caused silently-dropped OpenAI calls → NaN metrics.
 timing metric exists in `ALL_METRICS`, and no evaluation CSV has a latency
 column. This is a real gap relative to the "Configuration vs. Latency"
 comparison this doc aims for; see [Caveats](#caveats--how-to-read-this).
+
+**Summary CSVs are now self-documenting.** Newer summary CSVs (the diversity-mode
+and per-filing runs onward) append three extra `_meta_*` rows after the metric
+rows: `_meta_input_file` (which golden Q&A CSV the run used), `_meta_run_tag`,
+and `_meta_n_questions` — stamped so a summary file alone answers "which
+dataset produced this?" without cross-referencing the run command. Older
+summary CSVs (the historical-phase baselines and the pre-diversity runs) don't
+have these rows.
 
 **Retrieval-only debug mode** (`--debug`, `run_debug_mode()` in
 `scripts/run_evaluation.py`) skips generation and metrics entirely and instead
@@ -411,6 +433,7 @@ seed=42). Run-tag naming: `{engine}_{chunking}_{mode}{_a<alpha>}{_k<top_k>}_{fil
 | `custom_parent_child_hybrid_a0.25_k10_llmfilters_cross_encoderrerank_rt6` ← **baseline for diversity experiments** | 0.346 | 0.565 | 0.871 | 0.129 | 0.520 | 0.554 |
 | ↳ + `mmr_l0.4` (MMR lambda=0.4) | 0.399 | **0.633** | **0.933** | **0.067** | 0.550 | 0.562 |
 | ↳ + `metaslots` (metadata_slots) | 0.358 | 0.549 | 0.926 | 0.074 | 0.540 | 0.567 |
+| ↳ + `mmr_l0.4` + `pf` (per-filing) — first run after the Fix 1 prompt change | 0.357 | 0.628 | **0.938** | **0.062** | 0.560 | **0.582** |
 | `custom_parent_child_hybrid_a0.25_k15_llmfilters_cross_encoderrerank_rt5` | 0.248 | 0.321 | 0.757 | 0.243 | 0.750 | 0.402 |
 | `custom_semantic_hybrid_k10_llmfilters_cross_encoderrerank_rt6` (BGE-M3) | 0.333 | 0.453 | 0.800 | 0.200 | 0.580 | 0.533 |
 
@@ -435,15 +458,24 @@ seed=42). Run-tag naming: `{engine}_{chunking}_{mode}{_a<alpha>}{_k<top_k>}_{fil
    candidates that the cross-encoder couldn't fully suppress at rt5.
 
 4. **Semantic retrieval (no rerank, parent_child_semantic)** achieved the best
-   context_precision (0.472) and correctness (0.578) of any run, suggesting
-   BGE-M3 embeddings match well for semantic-category questions even without
-   reranking. FER still 0.50.
+   context_precision (0.472) of any run, suggesting BGE-M3 embeddings match
+   well for semantic-category questions even without reranking. FER still 0.50.
 
-5. **FER floor problem:** Even the best run has FER=0.52–0.55 (13–14/25
+5. **FER floor problem:** Even the best run has FER=0.52–0.56 (13–14/25
    flagged). Root-cause breakdown: ~7 cases are retrieval failures (wrong
    chunks retrieved → high FER regardless of generation quality), ~4 are
    temporal over-reporting (Fix 1 target), ~10 are analytical questions where
    valid LLM interpretations diverge from the golden reference style.
+
+6. **MMR + per-filing together give the best correctness and faithfulness
+   of any recorded run** (correctness 0.582, faithfulness 0.938, hallucination
+   0.062) — surpassing MMR alone and the semantic-retrieval run above on those
+   two metrics. context_recall (0.628) and FER (0.56) land close to MMR-alone's
+   numbers rather than improving further, so per-filing's marginal contribution
+   on top of MMR looks small in this single run — and since this run also
+   postdates the Fix 1 prompt change, some of the faithfulness/hallucination
+   gain may belong to the prompt fix rather than retrieval. An isolated
+   per-filing-only run is needed to separate the three effects.
 
 ### Key findings from earlier debugging
 
@@ -468,10 +500,13 @@ seed=42). Run-tag naming: `{engine}_{chunking}_{mode}{_a<alpha>}{_k<top_k>}_{fil
 
 - All "current pipeline" runs: n=25, seed=42. Directionally comparable but
   not a controlled experiment with statistically significant differences.
-- Judge-model: `gpt-4o-mini` for both generation and evaluation (same model
-  family) — self-judging bias applies to `correctness`, `faithfulness`,
-  `factual_error_rate`. Relative comparisons within this table are more
-  trustworthy than absolute scores.
+- Judge-model: generation uses `gpt-4o-mini`, evaluation/judging uses `gpt-4o`
+  (`EVALUATION_MODEL` in `.env`) — different models, so self-judging bias is
+  not currently a concern for `correctness`, `faithfulness`,
+  `factual_error_rate`, or the other LLM-scored metrics. (This was not always
+  true — an earlier `.env` override collapsed both to `gpt-4o-mini`; if you
+  see that override reappear, treat relative comparisons as more trustworthy
+  than absolute scores again.)
 - Latency is not measured. The evaluation pipeline has no timing
   instrumentation — add a timer around `_retrieve_chunks()` and `generate()`
   in `run_evaluation.py` if needed.
