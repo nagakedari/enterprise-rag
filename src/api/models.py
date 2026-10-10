@@ -149,6 +149,18 @@ class EvaluationRunParams(BaseModel):
             "Defaults to ceil(top_k / n_entities), minimum 2."
         ),
     )
+    use_tools: bool = Field(
+        default=False,
+        description=(
+            "Run the router+calculator step (src/generation/agent.py "
+            "route_and_calculate) on top of generation, same as /chat: a "
+            "lightweight classifier decides whether a question needs a "
+            "computed value (change/trend/ratio/share-of-total/comparison) "
+            "and, if so, runs the matching FinancialAnalyticsTools function "
+            "in Python before the answer is generated. Default off, so "
+            "existing evaluation runs are unaffected."
+        ),
+    )
     samples: int = Field(default=25, ge=1, le=500)
     company: Optional[str] = None
     question_type: Optional[str] = None

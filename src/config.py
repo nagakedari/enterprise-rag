@@ -184,6 +184,29 @@ class EvaluationConfig:
 
 
 @dataclass
+class RouterConfig:
+    """
+    LLM settings for the routing classifier (src/generation/router.py).
+
+    Deliberately a small/cheap model — it only classifies a question into a
+    path (rag_only / tool_only / rag_and_tool) and, when a calculation is
+    needed, picks which FinancialAnalyticsTools function applies and later
+    extracts that function's numeric arguments from retrieved text. It never
+    generates the final answer, so it can stay cheap even if GENERATION_MODEL
+    is upgraded for answer quality.
+
+    Default: gpt-4o-mini. Override via ROUTER_MODEL env var.
+    """
+    model: str = field(
+        default_factory=lambda: os.getenv("ROUTER_MODEL", "gpt-4o-mini")
+    )
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    temperature: float = 0.0
+
+
+@dataclass
 class RetrievalConfig:
     """Vector retrieval settings."""
     top_k: int = field(
@@ -221,6 +244,7 @@ class Config:
     embedding: EmbeddingConfig = field(default_factory=EmbeddingConfig)
     generation: GenerationConfig = field(default_factory=GenerationConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
+    router: RouterConfig = field(default_factory=RouterConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
     # Persistent docstore for LlamaIndex AutoMergingRetriever (smart mode)
     llamaindex_docstore_path: Path = field(

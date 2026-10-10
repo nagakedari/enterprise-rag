@@ -23,6 +23,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from src.api.evaluation_routes import router as evaluation_router
 from src.api.models import ChatRequest, ChatResponse, SourceDocument
 from src.config import Config
+from src.generation.agent import route_and_calculate
 from src.generation.generator import generate
 from src.retrieval.retriever import retrieve
 from src.retrieval.llamaindex_retriever import retrieve_llamaindex
@@ -142,12 +143,28 @@ def chat(request: ChatRequest) -> ChatResponse:
         logger.exception("Retrieval failed")
         raise HTTPException(status_code=502, detail=f"Retrieval error: {exc}") from exc
 
+    # ── Calculation routing ───────────────────────────────────────────────────
+    # Runs by default on every request — a lightweight classifier (see
+    # src/generation/router.py) decides whether this question needs a computed
+    # value (change/trend/ratio/share-of-total/comparison) on top of the
+    # figures already retrieved above. Free-text arithmetic from an LLM is
+    # unreliable, so when needed the actual math runs in Python via
+    # FinancialAnalyticsTools (src/generation/tools.py), not the model.
+    # Failure here degrades to plain retrieval+generation rather than failing
+    # the request — the calculation step is additive, not load-bearing.
+    try:
+        calculation = route_and_calculate(request.query, chunks, _config)
+    except Exception:
+        logger.exception("Calculation routing failed — continuing without it")
+        calculation = None
+
     # ── Generation ─────────────────────────────────────────────────────────────
     try:
         answer = generate(
             query=request.query,
             chunks=chunks,
             config=_config.generation,
+            calculation=calculation,
         )
     except Exception as exc:
         logger.exception("Generation failed")

@@ -51,6 +51,7 @@ def build_run_tag(
     max_per_entity: Optional[int] = None,
     question_type: Optional[str] = None,
     seed: Optional[int] = None,
+    use_tools: bool = False,
 ) -> str:
     """
     Build the run tag embedded in evaluation_results_<run_tag>.csv filenames.
@@ -77,6 +78,11 @@ def build_run_tag(
         seed:                 Random seed used for Q&A sampling.  Only appended when
                               it differs from the default (42) so existing filenames
                               are unaffected.
+        use_tools:            Whether the router+FinancialAnalyticsTools calculation
+                              step (src/generation/agent.py route_and_calculate) ran
+                              on top of generation. Defaults to False so historical
+                              filenames keep meaning exactly what they always meant —
+                              plain retrieval+generation, no calculator.
 
     Returns:
         The run tag string, e.g.
@@ -111,8 +117,11 @@ def build_run_tag(
     qtype_tag = f"_{_QTYPE_ABBREV.get(question_type, 'qt')}" if question_type else ""
     # Encode seed only when non-default so existing filenames are not renamed.
     seed_tag = f"_s{seed}" if (seed is not None and seed != 42) else ""
+    # Only appended when enabled, so every historical filename (no _tools
+    # segment) keeps meaning what it always meant: no calculator involved.
+    tools_tag = "_tools" if use_tools else ""
     return (
         f"{engine}_{chunking_strategy}_{mode_tag}{alpha_tag}{topk_tag}"
         f"_{filter_mode}filters{rerank_tag}{rerank_topk_tag}"
-        f"{diversity_tag}{lambda_tag}{max_entity_tag}{per_filing_tag}{qtype_tag}{seed_tag}"
+        f"{diversity_tag}{lambda_tag}{max_entity_tag}{per_filing_tag}{qtype_tag}{seed_tag}{tools_tag}"
     )

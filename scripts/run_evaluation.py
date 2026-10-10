@@ -56,6 +56,7 @@ from src.retrieval.retriever import retrieve, retrieve_per_filing
 from src.retrieval.llamaindex_retriever import retrieve_llamaindex
 from src.retrieval.query_filters import extract_query_filters
 from src.retrieval.reranker import rerank
+from src.generation.agent import route_and_calculate
 from src.generation.generator import generate
 from src.evaluation.evaluator import (
     ALL_METRICS,
@@ -355,9 +356,19 @@ def run_rag(
     per_filing: bool = False,
     chunks_per_filing: int = 3,
     max_per_entity: Optional[int] = None,
+    use_tools: bool = False,
 ) -> tuple[str, list[str]]:
     """
     Execute the full RAG pipeline for a single *question*.
+
+    Args:
+        use_tools: When True, run the same router+calculator step /chat uses
+                   (src.generation.agent.route_and_calculate) on top of the
+                   retrieved chunks before generation — lets analytics-style
+                   gold questions (trend, ratio, share-of-total) be evaluated
+                   with the calculation the production endpoint would apply.
+                   Defaults to False so existing evaluation runs (and their
+                   run-tag filenames) are unaffected.
 
     Returns:
         (generated_answer, retrieved_context_strings)
@@ -370,10 +381,19 @@ def run_rag(
         retrieval_mode, retrieval_alpha, filter_mode, rerank_mode, rerank_top_k,
         diversity_mode, mmr_lambda, per_filing, chunks_per_filing, max_per_entity,
     )
+
+    calculation = None
+    if use_tools:
+        try:
+            calculation = route_and_calculate(question, chunks, config)
+        except Exception:
+            logger.exception("Calculation routing failed for %r — continuing without it", question)
+
     generated_answer = generate(
         query=question,
         chunks=chunks,
         config=config.generation,
+        calculation=calculation,
     )
     return generated_answer, [c.text for c in chunks]
 
@@ -786,6 +806,21 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
+        "--use-tools",
+        action="store_true",
+        default=False,
+        dest="use_tools",
+        help=(
+            "Run the router+calculator step (src/generation/agent.py) on top "
+            "of generation, same as /chat: a lightweight classifier decides "
+            "whether a question needs a computed value (change/trend/ratio/"
+            "share-of-total/comparison) and, if so, extracts arguments and "
+            "runs the matching FinancialAnalyticsTools function in Python "
+            "before the answer is generated. Default off, so existing "
+            "evaluation runs are unaffected."
+        ),
+    )
+    parser.add_argument(
         "--metrics",
         type=str,
         default=None,
@@ -859,11 +894,12 @@ def main() -> None:
         max_per_entity=args.max_per_entity,
         question_type=args.question_type,
         seed=args.seed,
+        use_tools=args.use_tools,
     )
 
     logger.info(
-        "Evaluation config: engine=%s  chunking_strategy=%s  mode=%s  alpha=%s",
-        args.engine, chunking_strategy, mode_tag, args.alpha,
+        "Evaluation config: engine=%s  chunking_strategy=%s  mode=%s  alpha=%s  use_tools=%s",
+        args.engine, chunking_strategy, mode_tag, args.alpha, args.use_tools,
     )
 
     # ── 1. Load golden Q&A pairs ───────────────────────────────────────────
@@ -932,6 +968,7 @@ def main() -> None:
                 per_filing=args.per_filing,
                 chunks_per_filing=args.chunks_per_filing,
                 max_per_entity=args.max_per_entity,
+                use_tools=args.use_tools,
             )
         except Exception as exc:
             logger.warning("RAG pipeline failed for row %s: %s", idx, exc, exc_info=True)

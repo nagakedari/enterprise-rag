@@ -215,6 +215,7 @@ def compute_run_tag(params: EvaluationRunParams) -> str:
         max_per_entity=params.max_per_entity,
         question_type=params.question_type,
         seed=params.seed,
+        use_tools=params.use_tools,
     )
 
 
@@ -481,6 +482,8 @@ def build_argv(params: EvaluationRunParams) -> List[str]:
         argv += ["--skip-ragas"]
     if params.input_path:
         argv += ["--input", params.input_path]
+    if params.use_tools:
+        argv += ["--use-tools"]
     return argv
 
 

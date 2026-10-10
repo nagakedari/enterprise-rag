@@ -15,9 +15,21 @@ Non-LLM evaluation metrics derived from golden Q&A pairs.
 
   geval_factual_error_rate(question, generated, golden, api_key, model)
       GEval-style LLM scoring: decomposes the generated answer into atomic
-      claims and checks what fraction are contradicted by / absent from the
-      golden answer.  Returns a hallucination rate in [0, 1] where 1.0 means
-      every claim is factually wrong.
+      claims and checks what fraction directly CONTRADICT the golden answer.
+      A claim the golden answer simply doesn't mention is not counted — the
+      golden answer is a curated excerpt, not an exhaustive fact set, and
+      penalizing "not verbatim in golden" would wrongly flag correct
+      elaboration (e.g. real details retrieval surfaced that golden omitted)
+      and correct derived arithmetic (e.g. a percent change computed from
+      golden's own figures) as hallucination. Whether an unmentioned claim is
+      actually grounded in the source document is a different question,
+      already answered by hallucination_rate (1 - RAGAS faithfulness), which
+      checks claims against the real retrieved context instead of a golden
+      excerpt — this metric is deliberately narrower: contradiction vs.
+      golden only. The one exception is a complete non-answer (no verifiable
+      content at all) when golden has substantive content — that still scores
+      1.0, since the system conveyed none of golden's facts.
+      Returns a rate in [0, 1] where 1.0 means every claim contradicts golden.
 """
 import logging
 import re
@@ -189,34 +201,62 @@ def geval_context_relevance(
 _FACTUAL_ERROR_PROMPT = """\
 You are a factual accuracy auditor for financial Q&A systems.
 
-Your task: identify what fraction of the claims in the GENERATED ANSWER are
-factually incorrect or directly contradicted by the REFERENCE ANSWER for a
-question about SEC 10-Q filings.
+Your task: identify what fraction of the claims in the GENERATED ANSWER
+directly contradict the REFERENCE ANSWER for a question about SEC 10-Q
+filings.
 
 Question:
 {question}
 
-Reference Answer (ground truth):
+Reference Answer (ground truth — a curated excerpt, not necessarily an
+exhaustive account of everything the filing says):
 {golden}
 
 Generated Answer (to audit):
 {generated}
 
 Instructions:
-1. Break the Generated Answer into individual factual claims (numbers, dates,
-   company names, financial figures, trends, comparisons, etc.).
-2. For each claim, decide: is it supported, contradicted, or not verifiable
-   from the Reference Answer?
-3. Count the claims that are CONTRADICTED or that assert specific facts absent
-   from the reference (i.e. potentially hallucinated).
-4. Return: contradicted_or_hallucinated_claims / total_claims
+1. Special case — complete non-answer: if the ENTIRE Generated Answer
+   contains no verifiable factual content whatsoever (no numbers, dates,
+   names, or specific facts anywhere in it — only a statement that
+   information isn't available) AND the Reference Answer contains
+   substantive factual content that directly answers the question, score
+   this 1.0: the system failed to convey any of the reference's facts.
+   Do NOT apply this special case if:
+     - the Generated Answer contains ANY substantive content (numbers,
+       dates, specific facts) alongside a hedge — evaluate that content
+       normally under steps 2+ instead, ignoring the hedge; or
+     - the Reference Answer itself states that the requested information is
+       not disclosed/available — a Generated Answer reaching the same
+       conclusion is agreement, not a failure, and should fall through to
+       steps 2+ (which will find nothing to contradict).
+2. Otherwise, break the Generated Answer into individual factual claims
+   (numbers, dates, company names, financial figures, trends, comparisons).
+3. For each claim, check ONLY whether the Reference states something that
+   directly conflicts with it for the same specific item (same company,
+   period, and metric) — e.g. Reference says Q2 revenue was $50B, Generated
+   says $60B for that same Q2.
+4. A claim the Reference simply does not mention is NOT an error. The
+   Reference is a curated excerpt, not an exhaustive account of the filing —
+   silence is not evidence of a mistake. (Whether an unmentioned claim is
+   actually grounded in the source document is a different question,
+   answered elsewhere by comparing against the retrieved context — this
+   audit only checks agreement with the Reference.)
+5. A claim that is a correct calculation (difference, percent change, ratio,
+   share of total) derived from figures the Reference itself states agrees
+   with the Reference — it is not a new unchecked claim.
+6. Differences in units, rounding, or formatting that represent the same
+   underlying value are identical, not a conflict (e.g. "$18,120 million",
+   "$18.1 billion", and "18,120M" are the same fact).
+7. Return: directly_contradicted_claims / total_claims
 
 Scoring rubric:
-  0.0  - Every claim in the generated answer is supported by the reference
-  0.25 - A small fraction of claims are wrong or unverifiable
-  0.5  - Roughly half the claims are wrong or unverifiable
-  0.75 - Most claims are wrong or unverifiable
-  1.0  - No claims are supported by the reference (complete hallucination)
+  0.0  - No claims directly contradict the Reference
+  0.25 - A small fraction of claims directly contradict the Reference
+  0.5  - Roughly half the claims directly contradict the Reference
+  0.75 - Most claims directly contradict the Reference
+  1.0  - Nearly all claims directly contradict the Reference, OR the
+         Generated Answer was a complete non-answer (see special case above)
 
 Respond with a SINGLE decimal number between 0.0 and 1.0. No other text."""
 
@@ -229,10 +269,18 @@ def geval_factual_error_rate(
     model: str = "gpt-4o-mini",
 ) -> float:
     """
-    GEval-style LLM measurement of factual hallucination rate per answer.
+    GEval-style LLM measurement of contradiction rate vs. the golden answer.
 
-    Decomposes the generated answer into atomic claims and asks the LLM
-    what fraction are contradicted by or absent from the golden answer.
+    Decomposes the generated answer into atomic claims and asks the LLM what
+    fraction directly CONTRADICT the golden answer. A claim golden simply
+    doesn't mention is not counted as an error — golden is a curated excerpt,
+    not an exhaustive fact set, so "not verbatim in golden" isn't evidence of
+    a mistake (that would wrongly penalize correct elaboration and correct
+    derived arithmetic on golden's own figures). Ungroundedness vs. the
+    actual retrieved context is a separate concern, already measured by
+    hallucination_rate. The only case this still scores 1.0 for despite no
+    literal contradiction is a complete non-answer when golden has
+    substantive content — see _FACTUAL_ERROR_PROMPT for the exact rule.
 
     Args:
         question:  The original user question.
@@ -243,8 +291,8 @@ def geval_factual_error_rate(
 
     Returns:
         A float in [0, 1].
-          0.0 → no hallucination detected (all claims supported)
-          1.0 → complete hallucination (no claims supported)
+          0.0 → no claims contradict golden
+          1.0 → (nearly) all claims contradict golden, or a complete non-answer
     """
     import openai  # local import
 

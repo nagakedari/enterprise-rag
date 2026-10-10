@@ -26,8 +26,9 @@ The generated answer's log line now reports `cached=N` tokens so you can
 verify cache savings in the logs.
 """
 import functools
+import json
 import logging
-from typing import List
+from typing import Any, Dict, List, Optional
 
 import openai
 
@@ -88,7 +89,13 @@ over time, cover all relevant periods.
 6. COMPARISON QUESTIONS — extract first, then compare.
    When the question asks you to compare quarters, years, or companies, first list \
 the relevant figure for each entity with its source, then produce the comparison. \
-Do not anchor on the first entity and ignore the rest."""
+Do not anchor on the first entity and ignore the rest.
+
+7. REPORT PRE-COMPUTED CALCULATIONS VERBATIM.
+   A [Calculation Result] block may appear after the sources. It was computed in \
+Python from the retrieved figures, not by you — report its numbers exactly as \
+given (do not re-derive, round differently, or second-guess them). Still cite the \
+sources that supplied its inputs."""
 
 
 def _build_context_block(chunks: List[RetrievedChunk]) -> str:
@@ -107,29 +114,43 @@ def generate(
     query: str,
     chunks: List[RetrievedChunk],
     config: GenerationConfig,
+    calculation: Optional[Dict[str, Any]] = None,
 ) -> str:
     """
-    Call the LLM with the retrieved context and return its answer.
+    Call the LLM with the retrieved context (and an optional pre-computed
+    calculation) and return its answer.
 
     Args:
-        query:   The user's original question.
-        chunks:  Retrieved context chunks (ordered by similarity).
-        config:  Generation model settings.
+        query:        The user's original question.
+        chunks:       Retrieved context chunks (ordered by similarity).
+        config:       Generation model settings.
+        calculation:  Optional result from a FinancialAnalyticsTools call
+                      (see src/generation/tools.py / agent.py) — e.g. a
+                      trend, ratio, or share-of-total already computed in
+                      Python. Included in the prompt as a [Calculation
+                      Result] block that the model is instructed to report
+                      verbatim rather than re-derive.
 
     Returns:
         The model's answer as a plain string.
     """
-    if not chunks:
+    if not chunks and calculation is None:
         return "No relevant documents were found to answer your question."
 
-    context_block = _build_context_block(chunks)
-    user_message = f"Context:\n\n{context_block}\n\nQuestion: {query}"
+    parts = []
+    if chunks:
+        parts.append(f"Context:\n\n{_build_context_block(chunks)}")
+    if calculation is not None:
+        parts.append(f"[Calculation Result]\n{json.dumps(calculation, indent=2)}")
+    parts.append(f"Question: {query}")
+    user_message = "\n\n".join(parts)
 
     logger.info(
-        "Calling %s with %d context chunks (total ~%d tokens)",
+        "Calling %s with %d context chunks (total ~%d tokens) calculation=%s",
         config.model,
         len(chunks),
         sum(c.token_count for c in chunks),
+        calculation is not None,
     )
 
     # CHANGED: reuse cached client instead of creating a new one per call.

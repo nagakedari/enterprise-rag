@@ -299,6 +299,22 @@ export default function ParamForm({ initialParams, onCheck, busy }: Props) {
               </div>
             )}
 
+            <div className="field checkbox">
+              <input
+                id="use_tools"
+                type="checkbox"
+                checked={params.use_tools}
+                onChange={(e) => set("use_tools", e.target.checked)}
+              />
+              <label htmlFor="use_tools">
+                Use calculator tools
+                <span style={{ fontWeight: "normal", color: "var(--color-muted, #888)", marginLeft: "0.4em" }}>
+                  (router decides if a question needs a computed value — change/trend/ratio/share-of-total —
+                  and runs it in Python before generation, same as /chat)
+                </span>
+              </label>
+            </div>
+
             <div className="field">
               <label htmlFor="seed">Seed</label>
               <input id="seed" type="number" value={params.seed} onChange={(e) => set("seed", Number(e.target.value) || 0)} />
