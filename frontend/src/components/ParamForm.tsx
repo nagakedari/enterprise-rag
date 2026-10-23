@@ -301,16 +301,16 @@ export default function ParamForm({ initialParams, onCheck, busy }: Props) {
 
             <div className="field checkbox">
               <input
-                id="use_tools"
+                id="agentic"
                 type="checkbox"
-                checked={params.use_tools}
-                onChange={(e) => set("use_tools", e.target.checked)}
+                checked={params.agentic}
+                onChange={(e) => set("agentic", e.target.checked)}
               />
-              <label htmlFor="use_tools">
-                Use calculator tools
+              <label htmlFor="agentic">
+                Agentic (tool calling)
                 <span style={{ fontWeight: "normal", color: "var(--color-muted, #888)", marginLeft: "0.4em" }}>
-                  (router decides if a question needs a computed value — change/trend/ratio/share-of-total —
-                  and runs it in Python before generation, same as /chat)
+                  (the model decides which searches to run and which calculator — change/trend/ratio/share-of-total —
+                  to call, looping until it can answer; same as /chat)
                 </span>
               </label>
             </div>

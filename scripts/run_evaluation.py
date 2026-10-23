@@ -52,11 +52,11 @@ load_dotenv()
 
 from src.config import Config
 from src.evaluation.run_tag import build_run_tag, resolve_chunking_strategy
-from src.retrieval.retriever import retrieve, retrieve_per_filing
+from src.retrieval.retriever import list_filing_periods, retrieve, retrieve_per_filing
 from src.retrieval.llamaindex_retriever import retrieve_llamaindex
 from src.retrieval.query_filters import extract_query_filters
 from src.retrieval.reranker import rerank
-from src.generation.agent import route_and_calculate
+from src.agentic import run_agent
 from src.generation.generator import generate
 from src.evaluation.evaluator import (
     ALL_METRICS,
@@ -245,10 +245,15 @@ def _retrieve_chunks(
     per_filing: bool = False,
     chunks_per_filing: int = 3,
     max_per_entity: Optional[int] = None,
+    filters: Optional[dict] = None,
 ) -> list:
     """
     Run retrieval (with optional re-ranking) and return raw RetrievedChunk objects.
     Shared by run_rag() (which adds generation) and run_retrieval_only() (debug).
+
+    filters: explicit {"company", "year", "quarter", "period_date"} to use
+    instead of extracting them from *question* via filter_mode — the agentic
+    path passes the filters the agent chose for each search.
 
     per_filing: when True and the question has no quarter filter, runs a separate
     retrieval query per (year, quarter) filing for the company. Guarantees temporal
@@ -260,12 +265,13 @@ def _retrieve_chunks(
         "metadata_slots" – guaranteed per-(company, quarter, year) slot coverage
         "source_cap"     – per-entity upper-bound cap (ceil(top_k / n_entities))
     """
-    filters = extract_query_filters(
-        question=question,
-        mode=filter_mode,
-        api_key=config.generation.api_key,
-        model=config.generation.model,
-    )
+    if filters is None:
+        filters = extract_query_filters(
+            question=question,
+            mode=filter_mode,
+            api_key=config.generation.api_key,
+            model=config.generation.model,
+        )
     logger.debug("Extracted filters: %s", filters)
 
     final_k = rerank_top_k if (rerank_mode and rerank_top_k is not None) else config.retrieval.top_k
@@ -276,6 +282,7 @@ def _retrieve_chunks(
     should_per_filing = (
         per_filing
         and filters.get("quarter") is None
+        and filters.get("period_date") is None  # a date already pins one filing
         and filters.get("company") is not None
         and engine != "llamaindex"
     )
@@ -356,44 +363,53 @@ def run_rag(
     per_filing: bool = False,
     chunks_per_filing: int = 3,
     max_per_entity: Optional[int] = None,
-    use_tools: bool = False,
+    agentic: bool = False,
+    filings: Optional[list] = None,
 ) -> tuple[str, list[str]]:
     """
     Execute the full RAG pipeline for a single *question*.
 
     Args:
-        use_tools: When True, run the same router+calculator step /chat uses
-                   (src.generation.agent.route_and_calculate) on top of the
-                   retrieved chunks before generation — lets analytics-style
-                   gold questions (trend, ratio, share-of-total) be evaluated
-                   with the calculation the production endpoint would apply.
-                   Defaults to False so existing evaluation runs (and their
-                   run-tag filenames) are unaffected.
+        agentic: When True, answer with the same agentic tool-calling loop
+                 /chat uses (src.agentic.run_agent): the model issues its own
+                 searches — each one run through _retrieve_chunks with this
+                 run's retrieval settings and the filters the agent chose —
+                 and calls FinancialAnalyticsTools calculators as needed.
+                 Contexts returned are every chunk the agent retrieved,
+                 including passages collapsed as repeats of another filing.
+        filings: Filing catalog (list_filing_periods) for the agent's planner.
+                 Defaults to False so existing evaluation runs (and their
+                 run-tag filenames) are unaffected.
 
     Returns:
         (generated_answer, retrieved_context_strings)
     """
-    if chunking_strategy is None:
-        chunking_strategy = "parent_child" if use_smart else "basic"
+    chunking_strategy = resolve_chunking_strategy(chunking_strategy, use_smart, agentic)
+
+    def search(query: str, company=None, year=None, quarter=None, period_date=None) -> list:
+        return _retrieve_chunks(
+            query, config, engine, chunking_strategy,
+            retrieval_mode, retrieval_alpha, filter_mode, rerank_mode, rerank_top_k,
+            diversity_mode, mmr_lambda, per_filing, chunks_per_filing, max_per_entity,
+            filters={"company": company, "year": year, "quarter": quarter, "period_date": period_date},
+        )
+
+    if agentic:
+        result = run_agent(question, search, config.agent, filings=filings)
+        # Collapsed repeats are judged as contexts too: they back the answer's
+        # "reported unchanged in <filing>" claims.
+        contexts = [c.text for c in result.sources] + [c.text for c, _ in result.repeated_sources]
+        return result.answer, contexts
 
     chunks = _retrieve_chunks(
         question, config, engine, chunking_strategy,
         retrieval_mode, retrieval_alpha, filter_mode, rerank_mode, rerank_top_k,
         diversity_mode, mmr_lambda, per_filing, chunks_per_filing, max_per_entity,
     )
-
-    calculation = None
-    if use_tools:
-        try:
-            calculation = route_and_calculate(question, chunks, config)
-        except Exception:
-            logger.exception("Calculation routing failed for %r — continuing without it", question)
-
     generated_answer = generate(
         query=question,
         chunks=chunks,
         config=config.generation,
-        calculation=calculation,
     )
     return generated_answer, [c.text for c in chunks]
 
@@ -806,18 +822,18 @@ def parse_args() -> argparse.Namespace:
         ),
     )
     parser.add_argument(
-        "--use-tools",
+        "--agentic",
         action="store_true",
         default=False,
-        dest="use_tools",
         help=(
-            "Run the router+calculator step (src/generation/agent.py) on top "
-            "of generation, same as /chat: a lightweight classifier decides "
-            "whether a question needs a computed value (change/trend/ratio/"
-            "share-of-total/comparison) and, if so, extracts arguments and "
-            "runs the matching FinancialAnalyticsTools function in Python "
-            "before the answer is generated. Default off, so existing "
-            "evaluation runs are unaffected."
+            "Answer with the agentic tool-calling loop (src/agentic/agent.py), "
+            "same as /chat: the model decides which searches to run (each one "
+            "through this run's retrieval/rerank settings, with filters the "
+            "agent chooses instead of --filter-mode extraction) and which "
+            "FinancialAnalyticsTools calculator to call, looping until it can "
+            "answer. Defaults --chunking-strategy to parent_child when neither "
+            "it nor --use-smart is given; alpha/top-k defaults are unchanged. "
+            "Default off, so existing evaluation runs are unaffected."
         ),
     )
     parser.add_argument(
@@ -872,7 +888,7 @@ def main() -> None:
         logger.info("top_k overridden to %d via --top-k", args.top_k)
 
     # Resolve effective strategy for run tag and pipeline calls
-    chunking_strategy = resolve_chunking_strategy(args.chunking_strategy, args.use_smart)
+    chunking_strategy = resolve_chunking_strategy(args.chunking_strategy, args.use_smart, args.agentic)
 
     # Build a run tag for output filenames so different configs don't overwrite each other
     # e.g. "custom_semantic_hybrid_a0.5_regexfilters_cross_encoderrerank"
@@ -894,13 +910,25 @@ def main() -> None:
         max_per_entity=args.max_per_entity,
         question_type=args.question_type,
         seed=args.seed,
-        use_tools=args.use_tools,
+        agentic=args.agentic,
+        judge_model=config.evaluation.model,
     )
 
     logger.info(
-        "Evaluation config: engine=%s  chunking_strategy=%s  mode=%s  alpha=%s  use_tools=%s",
-        args.engine, chunking_strategy, mode_tag, args.alpha, args.use_tools,
+        "Evaluation config: engine=%s  chunking_strategy=%s  mode=%s  alpha=%s  agentic=%s  judge=%s",
+        args.engine, chunking_strategy, mode_tag, args.alpha, args.agentic, config.evaluation.model,
     )
+    # A judge scoring answers from its own model is biased toward them
+    # (self-preference) — warn when the judge is one of the answering models.
+    answering_models = {config.generation.model}
+    if args.agentic:
+        answering_models |= {config.agent.model, config.agent.planner_model}
+    if config.evaluation.model in answering_models:
+        logger.warning(
+            "EVALUATION_MODEL=%s also produces answers in this run (%s) — use a "
+            "stronger judge to avoid self-preference bias.",
+            config.evaluation.model, sorted(answering_models),
+        )
 
     # ── 1. Load golden Q&A pairs ───────────────────────────────────────────
     qna_csv = Path(args.input).resolve() if args.input else DEFAULT_QNA_CSV
@@ -934,6 +962,24 @@ def main() -> None:
         return
 
     # ── 2. Run the RAG pipeline for each question ──────────────────────────
+    # Agentic runs give the planner the filing catalog (which filings exist
+    # and the fiscal quarter each covers), loaded once from the indexed data.
+    # LlamaIndex collections lack the DATE properties; the custom collection
+    # for the same strategy describes the same filings.
+    filings = None
+    if args.agentic:
+        catalog_collection = {
+            "semantic": config.weaviate.semantic_collection_name,
+            "parent_child": config.weaviate.smart_collection_name,
+        }.get(chunking_strategy, config.weaviate.collection_name)
+        filings = list_filing_periods(config, catalog_collection)
+        missing = [f.source_file for f in filings if f.period_end is None]
+        logger.info("Filing catalog: %d filings from %s", len(filings), catalog_collection)
+        if missing:
+            logger.warning(
+                "%d filing(s) have no period dates — re-run ingestion to add them: %s",
+                len(missing), missing,
+            )
     eval_samples: list[EvalSample] = []
     failed = 0
     total = len(qna_df)
@@ -968,7 +1014,8 @@ def main() -> None:
                 per_filing=args.per_filing,
                 chunks_per_filing=args.chunks_per_filing,
                 max_per_entity=args.max_per_entity,
-                use_tools=args.use_tools,
+                agentic=args.agentic,
+                filings=filings,
             )
         except Exception as exc:
             logger.warning("RAG pipeline failed for row %s: %s", idx, exc, exc_info=True)
@@ -1057,6 +1104,8 @@ def main() -> None:
         "metric": "_meta_run_tag",      "mean": run_tag,
     }, {
         "metric": "_meta_n_questions",  "mean": len(results_df),
+    }, {
+        "metric": "_meta_judge_model",  "mean": config.evaluation.model,
     }])
     agg = pd.concat([agg, meta], ignore_index=True)
     agg.to_csv(summary_path, index=False)

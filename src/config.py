@@ -7,6 +7,7 @@ Load your .env file before importing this module, e.g.:
 import os
 from dataclasses import dataclass, field
 from pathlib import Path
+from typing import Optional
 
 
 @dataclass
@@ -171,11 +172,19 @@ class EvaluationConfig:
     stronger model than the one being tested — avoids the 'LLM judging itself'
     self-serving bias.
 
-    Default judge: gpt-4o  (stronger than gpt-4o-mini used for generation)
+    Default judge: gpt-4.1 — stronger than every model that produces answers
+    (gpt-4o-mini generation/agent, gpt-4o agent planning turn). Runs judged
+    by anything other than gpt-4o (the historical judge) get a _judge-<model>
+    run-tag suffix so their scores are never mistaken for comparable to older
+    gpt-4o-judged results.
+
+    Kept to non-reasoning models: the pinned ragas/langchain-openai stack sends
+    temperature=0 / max_tokens, which GPT-5 and o-series models reject.
+
     Override via EVALUATION_MODEL env var.
     """
     model: str = field(
-        default_factory=lambda: os.getenv("EVALUATION_MODEL", "gpt-4o")
+        default_factory=lambda: os.getenv("EVALUATION_MODEL", "gpt-4.1")
     )
     api_key: str = field(
         default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
@@ -204,6 +213,90 @@ class RouterConfig:
         default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
     )
     temperature: float = 0.0
+
+
+@dataclass
+class AgentConfig:
+    """
+    LLM settings for the agentic tool-calling loop (src/agentic/agent.py).
+
+    The agent model both drives tool use (which searches to run, which
+    calculator to call) and writes the final cited answer, so it is the
+    agentic counterpart of GENERATION_MODEL rather than the cheap router.
+
+    planner_model runs the forced plan_research and list_topics calls, which
+    decide what is searched and what the answer covers. `model` runs the
+    search turns and writes the final answer. Both default to gpt-4o: in an
+    A/B on the "not reported" case, gpt-4o-mini kept substituting nearby
+    figures for missing ones (correctness 0.48 vs 0.58 with gpt-4o, same
+    prompt). Keep EVALUATION_MODEL stronger than both, so the judge is never
+    weaker than the system under test.
+
+    max_iterations caps the number of tool-calling turns per question
+    (including the plan turn); once
+    reached, one extra turn with tools disabled forces an answer from
+    whatever was gathered, so worst case is max_iterations + 1 LLM calls.
+
+    Override via AGENT_MODEL / AGENT_PLANNER_MODEL / AGENT_MAX_TOKENS /
+    AGENT_MAX_ITERATIONS.
+    """
+    model: str = field(
+        default_factory=lambda: os.getenv("AGENT_MODEL", "gpt-4o")
+    )
+    planner_model: str = field(
+        default_factory=lambda: os.getenv("AGENT_PLANNER_MODEL", "gpt-4o")
+    )
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    max_tokens: int = field(
+        default_factory=lambda: int(os.getenv("AGENT_MAX_TOKENS", "1024"))
+    )
+    max_iterations: int = field(
+        default_factory=lambda: int(os.getenv("AGENT_MAX_ITERATIONS", "7"))
+    )
+    temperature: float = 0.0
+
+
+@dataclass
+class ChatConfig:
+    """
+    Server-side retrieval defaults for POST /chat (src/api/main.py), applied
+    to every ChatRequest field the caller leaves unset (null/omitted).
+
+    Defaults mirror the best evaluation config (minus MMR, which /chat does
+    not support): parent-child collection, hybrid retrieval, alpha 0.25,
+    top_k 10 (x3 over-fetch = 30 candidates) re-ranked by the cross-encoder
+    down to 6 — applied to every search the agent makes. A request can turn
+    re-ranking off with rerank_mode="none".
+
+    Override via CHAT_CHUNKING_STRATEGY / CHAT_RETRIEVAL_MODE /
+    CHAT_RETRIEVAL_ALPHA / CHAT_TOP_K / CHAT_RERANK_MODE ("none" disables) /
+    CHAT_RERANK_TOP_K. The cross-encoder needs torch + sentence-transformers
+    (run the server from rag_venv); without them re-ranking is skipped with
+    a warning.
+    """
+    chunking_strategy: str = field(
+        default_factory=lambda: os.getenv("CHAT_CHUNKING_STRATEGY", "parent_child")
+    )
+    retrieval_alpha: float = field(
+        default_factory=lambda: float(os.getenv("CHAT_RETRIEVAL_ALPHA", "0.25"))
+    )
+    top_k: int = field(
+        default_factory=lambda: int(os.getenv("CHAT_TOP_K", "10"))
+    )
+    retrieval_mode: str = field(
+        default_factory=lambda: os.getenv("CHAT_RETRIEVAL_MODE", "hybrid")
+    )
+    rerank_mode: Optional[str] = field(
+        default_factory=lambda: (
+            None if os.getenv("CHAT_RERANK_MODE", "cross_encoder").lower() in ("", "none")
+            else os.getenv("CHAT_RERANK_MODE", "cross_encoder")
+        )
+    )
+    rerank_top_k: int = field(
+        default_factory=lambda: int(os.getenv("CHAT_RERANK_TOP_K", "6"))
+    )
 
 
 @dataclass
@@ -245,6 +338,8 @@ class Config:
     generation: GenerationConfig = field(default_factory=GenerationConfig)
     evaluation: EvaluationConfig = field(default_factory=EvaluationConfig)
     router: RouterConfig = field(default_factory=RouterConfig)
+    agent: AgentConfig = field(default_factory=AgentConfig)
+    chat: ChatConfig = field(default_factory=ChatConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
     # Persistent docstore for LlamaIndex AutoMergingRetriever (smart mode)
     llamaindex_docstore_path: Path = field(

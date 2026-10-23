@@ -1,0 +1,17 @@
+metric,mean,std,min,max,avg_pct,flagged_count,total,flagged_pct,threshold,note
+exactness,0.478,0.1486,0.2192,0.8148,,,,,,
+answer_similarity,0.8453,0.0498,0.7138,0.9162,,,,,,
+correctness,0.5891,0.2005,0.2638,0.979,,,,,,
+context_precision,0.4686,0.3572,0.0,1.0,,,,,,
+context_recall,0.5798,0.2935,0.0,1.0,,,,,,
+context_relevance,0.7,0.3461,0.0,1.0,,,,,,
+faithfulness,0.9294,0.1438,0.5,1.0,,,,,,
+hallucination_rate,0.0706,0.1438,0.0,0.5,,,,,,
+answer_relevance,0.4688,0.4616,0.0,0.9988,,,,,,
+factual_error_rate,0.22,0.4103,0.0,1.0,,,,,,
+hallucination_rate,0.0706,,,,7.06,3.0,25.0,12.0,0.2,1 – faithfulness (context-grounded); lower is better
+factual_error_rate,0.22,,,,22.0,6.0,25.0,24.0,0.2,GEval claim audit vs golden answer; lower is better
+_meta_input_file,/Users/manjusri/learning/generative_ai/KG-RAG-datasets/sec-10-q/data/v1/qna_data_gold_page_present_25.csv,,,,,,,,,
+_meta_run_tag,custom_parent_child_hybrid_a0.25_k10_llmfilters_cross_encoderrerank_rt6_mmr_l0.4_judge-gpt-4.1,,,,,,,,,
+_meta_n_questions,25,,,,,,,,,
+_meta_judge_model,gpt-4.1,,,,,,,,,

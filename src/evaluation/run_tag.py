@@ -15,9 +15,21 @@ must be preserved by every caller.
 from typing import Optional
 
 
-def resolve_chunking_strategy(chunking_strategy: Optional[str], use_smart: bool) -> str:
-    """Resolve the effective chunking strategy, mirroring the CLI's --use-smart fallback."""
-    return chunking_strategy or ("parent_child" if use_smart else "basic")
+def resolve_chunking_strategy(
+    chunking_strategy: Optional[str],
+    use_smart: bool,
+    agentic: bool = False,
+) -> str:
+    """
+    Resolve the effective chunking strategy, mirroring the CLI's --use-smart
+    fallback. Agentic runs default to parent_child (the collection /chat's
+    agent uses by default) instead of basic when no strategy is given.
+    """
+    return chunking_strategy or ("parent_child" if (use_smart or agentic) else "basic")
+
+
+# Judge that scored every run before EVALUATION_MODEL moved to gpt-4.1.
+HISTORICAL_JUDGE_MODEL = "gpt-4o"
 
 
 _QTYPE_ABBREV = {
@@ -51,7 +63,8 @@ def build_run_tag(
     max_per_entity: Optional[int] = None,
     question_type: Optional[str] = None,
     seed: Optional[int] = None,
-    use_tools: bool = False,
+    agentic: bool = False,
+    judge_model: Optional[str] = None,
 ) -> str:
     """
     Build the run tag embedded in evaluation_results_<run_tag>.csv filenames.
@@ -78,11 +91,17 @@ def build_run_tag(
         seed:                 Random seed used for Q&A sampling.  Only appended when
                               it differs from the default (42) so existing filenames
                               are unaffected.
-        use_tools:            Whether the router+FinancialAnalyticsTools calculation
-                              step (src/generation/agent.py route_and_calculate) ran
-                              on top of generation. Defaults to False so historical
-                              filenames keep meaning exactly what they always meant —
-                              plain retrieval+generation, no calculator.
+        agentic:              Whether answers came from the agentic tool-calling loop
+                              (src/agentic/agent.py) instead of one retrieval + one
+                              generation. Defaults to False so historical filenames
+                              keep meaning exactly what they always meant. (Older
+                              `_tools` files are from the since-replaced deterministic
+                              router+calculator step, not from the agent.)
+        judge_model:          EVALUATION_MODEL that scored the run. Appended as
+                              _judge-<model> unless it is the historical judge
+                              (gpt-4o), since LLM-judged scores from different
+                              judges are not comparable; every older filename
+                              (no _judge segment) was judged by gpt-4o.
 
     Returns:
         The run tag string, e.g.
@@ -117,11 +136,12 @@ def build_run_tag(
     qtype_tag = f"_{_QTYPE_ABBREV.get(question_type, 'qt')}" if question_type else ""
     # Encode seed only when non-default so existing filenames are not renamed.
     seed_tag = f"_s{seed}" if (seed is not None and seed != 42) else ""
-    # Only appended when enabled, so every historical filename (no _tools
-    # segment) keeps meaning what it always meant: no calculator involved.
-    tools_tag = "_tools" if use_tools else ""
+    # Only appended when enabled, so every historical filename (no _agentic
+    # segment) keeps meaning what it always meant: single-pass RAG.
+    agentic_tag = "_agentic" if agentic else ""
+    judge_tag = f"_judge-{judge_model}" if (judge_model and judge_model != HISTORICAL_JUDGE_MODEL) else ""
     return (
         f"{engine}_{chunking_strategy}_{mode_tag}{alpha_tag}{topk_tag}"
         f"_{filter_mode}filters{rerank_tag}{rerank_topk_tag}"
-        f"{diversity_tag}{lambda_tag}{max_entity_tag}{per_filing_tag}{qtype_tag}{seed_tag}{tools_tag}"
+        f"{diversity_tag}{lambda_tag}{max_entity_tag}{per_filing_tag}{qtype_tag}{seed_tag}{agentic_tag}{judge_tag}"
     )

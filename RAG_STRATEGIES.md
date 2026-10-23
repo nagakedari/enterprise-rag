@@ -355,6 +355,446 @@ par with MMR alone on recall/faithfulness. An isolated per-filing-only run
 
 ---
 
+## 7b. Tool calling — calculators, then a fully agentic loop
+
+**Problem addressed:** analytics-style gold questions (trend across quarters,
+gross margin, effective tax rate, a segment's share of revenue) require
+multi-step arithmetic over figures pulled from prose. The generation model
+does that unreliably when it computes silently in its answer.
+
+**Calculators (shared by both stages below):** `src/generation/tools.py` —
+`FinancialAnalyticsTools` with `calculate_change`, `analyze_trend`,
+`calculate_ratio`, `calculate_share_of_total`, `compare_across_entities`,
+exposed as OpenAI function schemas. The math always runs in Python.
+
+### Stage 1 — deterministic router + calculator (replaced in /chat and eval)
+
+`src/generation/router.py` + `src/generation/agent.py`: one forced
+`route` call classifies the question (`rag_only` / `tool_only` /
+`rag_and_tool`) and picks a calculator; one forced call extracts that
+calculator's arguments from the already-retrieved chunks; the result was
+injected into `generate()` as a `[Calculation Result]` block (prompt rule 7).
+Fixed 2–3 extra LLM calls, no follow-up if a figure was missing.
+
+Measured (`custom_parent_child_hybrid_a0.25_k10_llmfilters_cross_encoderrerank_rt6`,
+n=25, without → with `_tools`):
+
+| metric | no tools | `_tools` |
+|---|---|---|
+| factual_error_rate | 0.55 | **0.25** |
+| answer_relevance | 0.616 | **0.690** |
+| correctness | **0.543** | 0.500 |
+| exactness | **0.466** | 0.437 |
+| faithfulness | **0.919** | 0.808 |
+| context_recall | 0.588 | 0.582 |
+
+Factual errors more than halved, but faithfulness fell — computed values
+(percent changes, shares) don't appear verbatim in the retrieved contexts the
+faithfulness judge sees, so they read as unsupported claims.
+
+The standalone pipeline is still runnable via `scripts/run_agent.py`
+(`answer_question()`); `route_and_calculate()` was removed with no callers left.
+
+### Stage 2 — agentic tool-calling loop (current /chat and `--agentic`)
+
+**Files:** `src/agentic/` (isolated package: `agent.py`, `tools.py`),
+`AgentConfig` in `src/config.py`; integrated in `src/api/main.py` and
+`scripts/run_evaluation.py`.
+
+**Approach:** the model gets `search_filings` + the five calculators with
+`tool_choice="auto"` and loops: it decides which searches to run (query and
+company/year/quarter filters per search), which calculator to call with the
+figures it found, and when to stop and answer. Calculator errors (e.g. a
+missing figure) are returned to the model as `{"error": ...}` so it can search
+again instead of silently dropping the calculation. Capped at
+`AGENT_MAX_ITERATIONS` (default 6) tool turns, then one `tool_choice="none"`
+turn forces an answer.
+
+- **Retrieval is injected** (`search_fn`): /chat wraps its request's
+  engine/chunking/mode/alpha/top_k/rerank settings; the eval CLI wraps
+  `_retrieve_chunks()` with the run's settings, passing the agent's filters
+  in place of `--filter-mode` extraction (per-filing, rerank, diversity all
+  still apply per search). Explicit `company/year/quarter` on a /chat request
+  are pinned and override the agent's filters.
+- **Global `[Source N]` numbering** across searches; a chunk returned again
+  keeps its first number, so citations stay stable. All retrieved chunks are
+  returned as `sources` (/chat) and as `retrieved_contexts` (eval).
+- **Same answer rules:** the system prompt is the generator's
+  `_SYSTEM_PROMPT` plus an agent addendum — so answers are formatted and
+  scored the same way as single-pass RAG.
+- /chat responses now include `tool_calls` (trace) and `agent_iterations`.
+- **/chat retrieval defaults** (`ChatConfig` in `src/config.py`, resolved
+  once per request by `_with_server_defaults()` in `src/api/main.py`).
+  Previously a request without `chunking_strategy` fell back to the *basic*
+  `SecDocument` collection with top_k 5 and alpha 0.5, so agent searches
+  silently ran on the weakest collection. Unset fields now default to
+  `parent_child` / hybrid alpha 0.25 / top_k 10, overridable via
+  `CHAT_CHUNKING_STRATEGY` / `CHAT_RETRIEVAL_ALPHA` / `CHAT_TOP_K` or per
+  request. The cross-encoder model is now cached per process
+  (`_load_cross_encoder` in `src/retrieval/reranker.py`) since the agent can
+  rerank every search it makes.
+  **Update (2026-10-23):** /chat now defaults to the best evaluation config
+  apart from MMR. That's parent_child / hybrid (`CHAT_RETRIEVAL_MODE`) /
+  alpha 0.25 / top_k 10, with 30 candidates cross-encoder re-ranked down to
+  6 (`CHAT_RERANK_MODE=cross_encoder`, `CHAT_RERANK_TOP_K=6`). A request can
+  turn re-ranking off with `rerank_mode: "none"`. MMR/diversity isn't
+  available in /chat, so results can differ from the
+  `…_rt6_mmr_l0.4` evaluation runs. The cross-encoder needs the server
+  running under `rag_venv`; otherwise re-ranking is skipped with a warning.
+- **`--agentic` evaluation runs default `--chunking-strategy` to
+  `parent_child`** when neither it nor `--use-smart` is given
+  (`resolve_chunking_strategy()` in `src/evaluation/run_tag.py`, shared by
+  the CLI and the UI's run-tag lookup so both name the run the same). Alpha
+  and top-k keep their normal evaluation defaults — only /chat defaults those.
+
+**Trade-off:** open-ended cost/latency (typically 2–4 LLM turns plus one
+retrieval per search, up to `max_iterations + 1` turns) vs. Stage 1's fixed
+2–3 calls. Expect the same faithfulness caveat as Stage 1 for computed values.
+
+**Status:** Implemented, evaluation pending. Run with `--agentic` (run tag
+suffix `_agentic`; historical `_tools` files are Stage 1) or the React UI
+"Agentic (tool calling)" checkbox.
+
+### Stage 2b — planning in the loop + stronger first turn
+
+**Problem addressed:** on broad / multi-period questions the agent ran a
+couple of generic searches and stopped. Example: *"Outline the risk elements
+associated with Microsoft's business and the evolution of these risks"* —
+every search matched Item 1A Risk Factors, so it missed the MD&A
+"Economic Conditions, Challenges, and Risks" section (the golden answer's
+"dynamic and highly competitive industry" point is nearly verbatim from it)
+and the Contingencies note (litigation; accrued legal liabilities
+$264M → $181M → $177M → $597M across the four filings). It then said the
+evolution "is not explicitly detailed", because nothing told it that
+comparing filings is grounded rather than the inference rule 4 forbids.
+
+**Approach (planning inside the loop, no extra LLM call):**
+
+- Generic strategy rules in the agent addendum (`src/agentic/agent.py`),
+  nothing question-specific: for broad / multi-part / multi-period questions,
+  write a short plan (sub-topics × companies × periods) in the first reply
+  and issue its searches in the same reply; phrase searches around the
+  different 10-Q sections a subject appears in; for change-over-time
+  questions, compare filings (constant / added / dropped / figures moved),
+  explicitly allowed as grounded synthesis; check the plan's coverage before
+  answering. Single-fact questions skip the plan.
+- **First turn on a stronger model** — `AGENT_PLANNER_MODEL` (default
+  `gpt-4o`) runs turn 1 only, where the plan and opening searches are
+  decided; later turns and the answer stay on `AGENT_MODEL` (`gpt-4o-mini`).
+  The plan text is logged and returned as `agent_plan` by /chat.
+- **Judge moved to `gpt-4.1`** (`EVALUATION_MODEL`) so the judge stays
+  stronger than every answering model (gpt-4o-mini, gpt-4o planner). GPT-5 /
+  o-series were ruled out: the pinned ragas 0.2 / langchain-openai 0.1
+  stack sends `temperature=0` / `max_tokens`, which reasoning models reject.
+  Runs judged by anything other than gpt-4o get a `_judge-<model>` run-tag
+  suffix and a `_meta_judge_model` summary row, since scores from different
+  judges aren't comparable; the CLI warns if the judge is also one of the
+  run's answering models (self-preference bias).
+
+**Observed (live, 2026-10-16):** asking for the plan in the prompt didn't
+work — gpt-4o issued tool calls without any plan text, and all searches
+stayed on "risk factors". Replaced by Stage 2c below.
+
+### Stage 2c — forced `plan_research` tool
+
+**Files:** `src/agentic/tools.py` (`plan_research` tool, `FILING_PARTS`),
+`src/agentic/agent.py` (turn 1 forced via `tool_choice`).
+
+**Approach:** turn 1 (on `AGENT_PLANNER_MODEL`) is forced by the API to
+call `plan_research`, which takes a structured list of sub-topics, each with
+`filing_part` (financial statements / notes / MD&A / market risk / legal
+proceedings / risk factors / any), `search_query`, `companies` and
+`periods`, plus `compare_across_periods`. The plan is recorded, returned
+as `agent_plan` by /chat, and stays in the conversation as a checklist.
+Costs one extra LLM turn per question (`AGENT_MAX_ITERATIONS` default raised
+6 → 7 to compensate).
+
+`filing_part` steers how the query is worded and is **not** a metadata
+filter. Ingested `section_title` values are too unreliable to filter on:
+AAPL's largest bucket is "Item 6. Exhibits" (100 chunks) and 73 more sit
+under a sentence fragment; INTC has 149 under "Note 13 :" and 127 under
+"PREAMBLE". A hard filter would silently drop relevant passages. Fixing
+`section_title` at ingestion is a prerequisite for a real section filter.
+
+**Observed (live /chat runs, parent_child, alpha 0.25, top_k 10; not a
+formal evaluation):**
+
+| Question | Result |
+|---|---|
+| Microsoft risks + evolution | Plan covered risk factors, MD&A, market risk and contingencies (12 parallel searches, 3 turns). The answer now includes litigation. But the plan skipped the 2022 Q3 filing, the queries stayed terse, the legal-accrual figures didn't make it in, and the "evolution" bullets are generic. 90 sources reached the context. |
+| Apple net sales over time | All four figures correct ($82,959M → $117,154M → $94,836M → $81,797M) and the up-then-down pattern matches the golden answer, so the earlier $123,945M error didn't recur. But the plan invented periods that don't exist (2022 Q1/Q2/Q4, 2023 Q4), `analyze_trend` failed on a null value, and the run hit the turn cap (8 turns). |
+| Apple net sales, quarter ended July 1, 2023 | **Wrong**: the plan mapped "July 1, 2023" to the 2023 Q2 filing and answered $94,836M; the correct figure is $81,797M (2023 Q3 filing). |
+
+**Open issue (fixed in Stage 2d):** the agent didn't know which filings
+existed or which dates each filing label covered, so it guessed periods,
+wasting searches and sometimes picking the wrong filing.
+
+### Stage 2d — fiscal-period dates at ingestion + filing catalog
+
+**Problem addressed:** filing labels are not calendar quarters and differ
+by company — the quarter ended July 1, 2023 is "2023 Q3" for AAPL but
+"2023 Q2" for INTC; AAPL/MSFT "2023 Q1" ends Dec 31, 2022 while AMZN's ends
+Mar 31, 2023. No reasoning from a date alone maps it to the right label.
+
+**Ingestion** (`src/ingestion/filing_period.py`, called from `parse_pdf`):
+- `period_end` comes from the cover line "For the quarterly period ended
+  …", which every 10-Q must carry. It was found in all 20 filings.
+  Statement headers aren't used for it, because their first date can be a
+  prior-year column.
+- `period_start` is derived. Calendar-quarter filers, detected because the
+  statements compare against the same day a year earlier, get the calendar
+  quarter. 52/53-week filers, which are also the default, get end minus 13
+  weeks. All 20 filings classified correctly with no overlapping ranges.
+  Known approximation: Apple's 14-week quarter ended Dec 31, 2022 is treated
+  as 13 weeks, so it starts Oct 2 rather than Sep 25.
+- Stored as Weaviate `DATE` properties `period_start`/`period_end` on
+  `SecDocument`, `SecDocumentSmart` and `DocumentChunk`, and as YYYYMMDD
+  ints in the LlamaIndex collections (excluded from embedded/LLM text).
+  Dates come from the freshly parsed PDFs, not the chunk checkpoints, so
+  re-ingesting from existing checkpoints adds them without re-embedding.
+  `ensure_schema*` adds the properties to existing collections.
+
+**Retrieval** (`src/retrieval/retriever.py`): `retrieve(period_date=…)`
+filters `period_start <= date <= period_end`; chunks carry
+`period_start`/`period_end`; `list_filing_periods()` reads the filing
+catalog live from the index (one aggregate plus one query per filing), so
+nothing needs rebuilding after new ingestion.
+
+**Agent:**
+- `search_filings` takes either the filing label (`year` + `quarter`) or
+  `date`. The date wins if both are given.
+- The filing catalog (label → date range) is placed in the first user
+  message. The system prompt stays static, so it remains cacheable.
+- Instructions: match question periods to catalog filings (labels for
+  "Q2 2023" / "the Q3 2022 10-Q", dates for "quarter ended …" / "around
+  May 2023"), plan only filings that exist, and check that column dates
+  match the period asked about.
+- Source headers now show "quarter ended …".
+- /chat caches the catalog for 5 minutes; the evaluation CLI loads it once
+  per `--agentic` run.
+
+Labels were kept rather than replaced with dates because 80 of the 195 gold
+questions name the filing label ("Apple's Q1 2023 10-Q"). Converting that
+to a calendar date would pick the wrong Apple filing.
+
+**Observed (live agent, OpenAI models, stand-in keyword search with the same
+filters — Weaviate was down; not a formal evaluation):**
+
+| Question | Before | After |
+|---|---|---|
+| Apple net sales, quarter ended Jul 1, 2023 | ❌ $94,836M (2023 Q2 filing) | ✅ $81,797M (2023 Q3) |
+| Intel net revenue, quarter ended Jul 1, 2023 | — | ✅ $12,949M (2023 Q2, the same date maps to a different label) |
+| Apple net sales over time | figures right, but searched 4 nonexistent periods; hit the turn cap (8 turns) | ✅ only the 4 real filings, `analyze_trend` +41.22% / −19.05% / −13.75%, overall −1.4%, "mixed"; 4 turns |
+| Apple opex vs revenue, Q1 2023 (label-style gold question) | — | ✅ 2023 Q1 filing: $14,316M vs $117,154M; but the 12.2% ratio was computed by the model, not `calculate_ratio` |
+
+In these runs the planner resolved dates through the catalog and searched
+by label, so the `date` filter itself (unit-tested) wasn't exercised by the
+model.
+
+**Requires re-ingestion** of each collection you query (see README / Makefile
+`ingest` targets). Until then, the catalog shows "period unknown" and date
+filters on a collection without the properties fail.
+
+### Stage 2e — collapse repeated passages + topic inventory before answering
+
+**Problem addressed:** on broad multi-period questions the answer dropped
+topics that *were* retrieved. Microsoft risk question, 3 runs on identical
+retrieval: tax and litigation passages were in the sources every time, but
+reached the answer in 1/3 runs (tax) and 0/3 (litigation). Causes:
+- 10-Q text repeats each quarter, so about 40 retrieved passages were
+  roughly 10 distinct ones ×4;
+- one answer section per period exhausted the output on the same risks;
+- nothing checked that the answer covered what the sources contained.
+
+**Approach (`src/agentic/tools.py`, `src/agentic/agent.py`):**
+1. **Repeat collapsing.** A passage is reported as "Repeats [Source N]"
+   instead of in full when ≥80% of its 5-word shingles already appeared in
+   sources from another filing of the same company AND all its figures (numbers with
+   a comma, decimal or 4+ digits — bare small integers are page numbers)
+   appear there too. Measured first: about half of MSFT 2023 Q1 parent chunks are
+   ≥85% contained in 2022 Q3; income-statement chunks overlap 8–60% (never
+   collapsed). Collapsed passages aren't numbered, so `sources` only contains
+   distinct passages.
+2. **Topic inventory (`list_topics`).** For questions the plan marks as
+   multi-period or multi-part, the search turns end with "READY", and then
+   `list_topics` is forced on `AGENT_PLANNER_MODEL` (gpt-4o). It lists one
+   entry per specific subject in the sources, each with its sources, filings
+   and change over time. **Every source must be accounted for** (under a topic
+   or in `not_relevant`); otherwise the tool returns an error naming them
+   and the step is retried once. The answer is then forced from the list.
+   Exposed as `agent_topics` on /chat.
+
+**Observed (MSFT risk question, 5 runs each, live Weaviate):**
+
+| | Before | Repeats + topic list (gpt-4o-mini) | + gpt-4o list, accounting |
+|---|---|---|---|
+| distinct sources / repeat refs | 37 / 4 | 26 / 23 (page numbers fixed, 0.80 threshold) | 26 / 23 |
+| topic list | — | "risk factors" (repeated the plan) | 5 specific topics, same every run |
+| golden topics in answer (of 6) | 3–5, unstable | 3–4 | 3, deterministic |
+| tax in answer | 1/3 | 5/5 | 5/5 |
+| litigation in answer | 0/3 | 0/5 | 0/5 |
+
+The source accounting showed why the coverage ceiling is 3: gpt-4o
+**explicitly marks the MD&A "Economic Conditions, Challenges, and Risks"
+passages and "Legal and Other Contingencies" as not relevant**, in every
+run. Those passages hold golden points 1, 2, 4 and 5 almost verbatim. The
+plan's single sub-topic ("risk factors", filing part = risk factors)
+narrows what counts as relevant, and the inventory follows it. The next
+lever is planner breadth, deliberately deferred until the evaluation below.
+
+**Status:** Implemented. Multi-Doc evaluation (25 questions, seed 42,
+`--agentic --alpha 0.25 --top-k 10`, judge gpt-4.1; files
+`evaluation_results/evaluation_results_{pre_dedup,dedup_topics}_custom_parent_child_hybrid_a0.25_k10_llmfilters_multidoc_agentic_judge-gpt-4.1*.csv`):
+
+| metric | before | after | Δ |
+|---|---|---|---|
+| correctness | 0.540 | 0.561 | +0.021 |
+| answer_relevance | 0.800 | 0.838 | +0.038 |
+| exactness | 0.407 | 0.423 | +0.015 |
+| context_precision | 0.207 | 0.231 | +0.024 |
+| faithfulness | 0.925 | 0.845 | **−0.080** |
+| hallucination_rate | 0.075 | 0.155 | **+0.080** |
+| context_recall | 0.813 | 0.754 | −0.059 |
+| factual_error_rate | 0.130 | 0.160 | +0.030 |
+
+Per question, correctness improved on 7, got worse on 5 and stayed the same
+on 13. Gains: Apple buybacks +0.32, Services trend +0.24, net sales trend
++0.16. Losses: Amazon risk factors −0.21, Microsoft R&D vs prior quarters
+−0.21.
+
+**Faithfulness regression, likely cause:** answers claiming a topic was
+"unchanged / consistently reported" doubled (4 → 8) and lost the most
+faithfulness (−0.137 average vs −0.053). Collapsed repeats aren't kept as
+sources, so the text from later filings that backs "unchanged in 2023 Q3"
+isn't in the evaluation contexts (or the /chat sources). The judge can't
+verify the claim, and context_recall drops for the same reason. Single
+run, n=25, so part of the differences is noise.
+
+**Fix (implemented):** repeats stay out of the prompt but are returned as
+`AgentRunResult.repeated_sources` (chunk + the [Source N] numbers it
+repeats). /chat returns them as `repeated_sources` (`repeats_sources` on
+each entry), and `--agentic` evaluation adds them to the judged contexts.
+`sources` numbering is unchanged. Tested offline. **Re-evaluation pending:
+the OpenAI account ran out of credits (`insufficient_quota`) before it
+could run.**
+
+**Environment caveat:** both runs above were executed with the Anaconda
+base Python (ragas 0.2.15, openai 1.30), not the project's `rag_venv`
+(ragas 0.2.6, openai 1.51). They're comparable with each other but not
+with `rag_venv` runs, and neither used reranking. The base environment's
+torch is broken, so `--rerank-mode cross_encoder` there silently skipped
+reranking and diversity. `src/retrieval/reranker.py` now logs the real
+import error and says reranking and diversity were skipped. Re-run
+everything in `rag_venv`.
+
+### Agentic vs single-pass on the best retrieval config (rag_venv, gpt-4.1 judge)
+
+Setup: `qna_data_gold_page_present_25.csv` (25 questions: 9 single-chunk,
+8 multi-chunk, 8 Multi-Doc), parent_child / hybrid / alpha 0.25 / top-k 10
+→ cross-encoder → rt6 → MMR λ 0.4. Run in `rag_venv`, no failures and no
+skipped reranking. The agentic run is the current code (plan, dates,
+repeat collapsing, topic list, repeats returned as contexts). Files:
+`evaluation_results_custom_parent_child_hybrid_a0.25_k10_llmfilters_cross_encoderrerank_rt6_mmr_l0.4{_judge-gpt-4.1,_agentic_judge-gpt-4.1}.csv`.
+
+| metric | original (gpt-4o judge) | single-pass (gpt-4.1) | agentic (gpt-4.1) | agentic − single |
+|---|---|---|---|---|
+| correctness | 0.562 | 0.589 | 0.550 | −0.039 |
+| answer_similarity | 0.843 | 0.845 | 0.871 | +0.026 |
+| faithfulness | 0.933 | 0.929 | 0.815 | −0.114 |
+| factual_error_rate | 0.550 | 0.220 | 0.060 | −0.160 |
+| answer_relevance | 0.534 | 0.469 | 0.902 | +0.433 |
+| context_precision | 0.399 | 0.469 | 0.515 | +0.047 |
+| context_recall | 0.633 | 0.580 | 0.775 | +0.195 |
+| context_relevance | 0.540 | 0.700 | 0.790 | +0.090 |
+
+Correctness by question type, single-pass → agentic:
+- Multi-Doc: 0.515 → 0.591 (but faithfulness 0.93 → 0.75)
+- Single-Doc Multi-Chunk: 0.527 → 0.445
+- Single-Doc Single-Chunk: 0.710 → 0.607
+
+Per question, the agent was better on 9, worse on 12 and about the same on
+4. Re-judging the same single-pass answers with gpt-4.1 moved
+factual_error_rate from 0.55 to 0.22, confirming that results from
+different judges can't be compared.
+
+**Why single-document questions lost (4 worst):**
+1. The agent answers unanswerable questions with substitute figures where
+   the golden answer says "not provided" (NVIDIA revenue vs costs, Intel
+   new-product revenue vs marketing).
+2. Its answers include more than was asked (NVIDIA R&D: added share of
+   revenue and the prior-year comparison), which adds unsupported or extra
+   statements.
+3. It names periods by filing label ("Q3 2023") instead of the end date the
+   golden answer uses (iPhone revenue: correct figure, but 0.60 vs 0.97).
+4. "Latest" is ambiguous: the agent picked the newest filing in the
+   catalog, while the golden answer used an earlier one.
+
+**Generic prompt fixes (implemented, evaluation pending):** two new rules in
+the agent instructions (`src/agentic/agent.py`):
+- **ANSWER SCOPE:** lead with the direct answer, add nothing that wasn't
+  asked, and when the filings lack what's asked, say so first and only
+  then note related information; never build a substitute answer.
+- **PERIOD NAMING:** refer to periods by quarter-end date ("the quarter
+  ended July 1, 2023"), with the filing label optional in parentheses.
+
+Spot check (not an evaluation):
+- iPhone question: now "For the quarter ended July 1, 2023 (AAPL 2023
+  Q3) … $39,669 million". Fixed.
+- Intel unanswerable question: now says "not explicitly detailed" up
+  front, but still goes on to compare total revenue with MG&A and refers
+  to "Q3 2023" in places. Only partly followed by gpt-4o-mini, which writes
+  the answer.
+
+**Why only partly — instruction conflicts, not mainly the model.** Trace of
+the Intel run:
+1. The topic list had no way to say "not reported", so gpt-4o filed new-
+   product revenue under sources 1–17. The "cover every topic" instruction
+   then forced the answer to say something about it.
+2. Generator rule 4's template ("…does not include X. Based on available
+   sources: …") invites a substitute answer.
+3. Rule 6 ("list each figure, then compare") pushed a comparison of
+   substitutes.
+4. "Q3 2023" was copied from Intel's own MD&A wording and the topic notes.
+
+**A/B (2 questions, best retrieval config, gpt-4.1 judge, 1 run each;
+prompt fix applied in memory):**
+
+| variant | iPhone correctness | Intel correctness | Intel faithfulness |
+|---|---|---|---|
+| A gpt-4o-mini, current prompt | 0.97 | 0.31 | 0.80 |
+| B gpt-4o, current prompt | 0.97 | 0.37 | 1.00 |
+| C gpt-4o-mini, fixed prompt | 0.97 | 0.48 | 1.00 |
+| D gpt-4o, fixed prompt | 0.97 | 0.58 | 1.00 |
+
+The prompt fix is the larger lever (+0.17), the model adds more (+0.10),
+and D matches single-pass (0.60). answer_relevance is 0 for every Intel
+answer: the metric penalises "not reported" answers, including golden-like
+ones.
+
+**Adopted (D):**
+- `list_topics` entries carry `reported` (bool). Sources are listed only if
+  they actually report the topic, and reported=false topics must be stated
+  as not reported, with no substitute figures.
+- New agent rule "MISSING INFORMATION OVERRIDES RULES 4 AND 6": rule 4's
+  continuation may only give asked-for information, and a comparison with
+  a missing side is declared impossible. Period naming now also overrides
+  labels taken from the sources and notes.
+- `AGENT_MODEL` default gpt-4o-mini → **gpt-4o** (search turns + answer;
+  the planner and topic steps were already gpt-4o). The judge stays gpt-4.1.
+- Higher cost per question than gpt-4o-mini.
+
+Live check after the change: the Intel answer reproduces D (topic marked
+reported=false, "a direct comparison … cannot be made", periods as dates).
+Minor quirk: it cited a source range ("[Sources 1-5, 7-9, 11-17]").
+**Full evaluation pending.**
+
+**Status:** Implemented, evaluation pending. **Re-run the non-agentic
+baseline with the gpt-4.1 judge too** — every result above was judged by
+gpt-4o, so agentic `_judge-gpt-4.1` numbers can't be compared against them
+directly.
+
+---
+
 ## 8. Evaluation mechanisms & metrics
 
 Orchestrator: `src/evaluation/evaluator.py` (`evaluate_samples()`), metric

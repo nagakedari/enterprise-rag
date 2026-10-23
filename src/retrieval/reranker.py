@@ -89,6 +89,7 @@ Usage
         diversity_mode="metadata_slots",
     )
 """
+import functools
 import logging
 import math
 from typing import Any, Dict, List, Literal, Optional, Tuple
@@ -466,6 +467,14 @@ def _rerank_llm(
 _DEFAULT_CROSS_ENCODER_MODEL = "cross-encoder/ms-marco-MiniLM-L-6-v2"
 
 
+@functools.lru_cache(maxsize=2)
+def _load_cross_encoder(model_name: str):
+    # Loaded once per process: the agentic /chat reranks every search it
+    # makes, so reloading the model per call would add seconds per request.
+    from sentence_transformers import CrossEncoder  # type: ignore
+    return CrossEncoder(model_name)
+
+
 def _rerank_cross_encoder(
     question: str,
     chunks: list,
@@ -476,17 +485,21 @@ def _rerank_cross_encoder(
     max_per_entity: Optional[int] = None,
 ) -> list:
     try:
-        from sentence_transformers import CrossEncoder  # type: ignore
-    except ImportError:
+        import sentence_transformers  # type: ignore  # noqa: F401
+    except ImportError as exc:
+        # Also raised when the package IS installed but a dependency fails to
+        # load (e.g. a torch install missing libtorch_cpu.dylib) — so report
+        # the real error, and say plainly what was skipped.
         logger.warning(
-            "sentence-transformers is not installed. "
-            "Run: pip install sentence-transformers\n"
-            "Falling back to original retrieval order."
+            "Cross-encoder unavailable — sentence-transformers failed to import: %s. "
+            "Re-ranking AND diversity_mode=%s are SKIPPED: returning the first %d "
+            "candidates in original retrieval order.",
+            exc, diversity_mode, top_k,
         )
         return chunks[:top_k]
 
     try:
-        encoder = CrossEncoder(model_name)
+        encoder = _load_cross_encoder(model_name)
         pairs = [(question, c.text[:512]) for c in chunks]
         raw_scores = encoder.predict(pairs)
 
@@ -508,7 +521,9 @@ def _rerank_cross_encoder(
 
     except Exception as exc:
         logger.warning(
-            "Cross-encoder re-ranker failed (%s) — returning original order.", exc
+            "Cross-encoder re-ranker failed (%s). Re-ranking AND diversity_mode=%s "
+            "are SKIPPED: returning the first %d candidates in original order.",
+            exc, diversity_mode, top_k,
         )
         return chunks[:top_k]
 

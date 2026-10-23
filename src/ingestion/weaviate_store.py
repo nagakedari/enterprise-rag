@@ -16,6 +16,10 @@ Properties stored per chunk:
     page_start    – first PDF page the chunk spans
     page_end      – last PDF page the chunk spans
     token_count   – number of tokens in the chunk
+    period_start  – first day of the fiscal quarter the filing covers (DATE)
+    period_end    – last day of that quarter, from the filing cover (DATE)
+                    (same two properties on SecDocumentSmart and DocumentChunk;
+                    see src/ingestion/filing_period.py)
 
 Phase-1 note:
     UUIDs are deterministic (uuid5) so re-running ingestion is idempotent –
@@ -23,12 +27,14 @@ Phase-1 note:
 """
 import logging
 import uuid
-from typing import List
+from datetime import date
+from typing import Dict, List, Optional, Tuple
 
 import weaviate
 from weaviate.classes.config import Configure, DataType, Property, VectorDistances, Tokenization
 
 from src.config import WeaviateConfig
+from src.ingestion.filing_period import to_rfc3339
 from src.ingestion.chunker import TextChunk
 from src.ingestion.smart_chunker import SmartTextChunk
 from src.ingestion.semantic_chunker import SemanticTextChunk
@@ -36,6 +42,35 @@ from src.ingestion.semantic_chunker import SemanticTextChunk
 logger = logging.getLogger(__name__)
 
 COLLECTION_NAME = "SecDocument"
+
+# source_file -> (period_start, period_end), built from the parsed documents
+FilingPeriods = Dict[str, Tuple[Optional[date], Optional[date]]]
+
+_PERIOD_PROPERTIES = [
+    Property(name="period_start", data_type=DataType.DATE),
+    Property(name="period_end",   data_type=DataType.DATE),
+]
+
+
+def _ensure_period_properties(client: weaviate.WeaviateClient, name: str) -> None:
+    """Add period_start/period_end to a collection created before they existed."""
+    collection = client.collections.get(name)
+    existing = {p.name for p in collection.config.get().properties}
+    for prop in _PERIOD_PROPERTIES:
+        if prop.name not in existing:
+            collection.config.add_property(prop)
+            logger.info("Added property '%s' to existing collection '%s'.", prop.name, name)
+
+
+def _period_properties(source_file: str, periods: Optional[FilingPeriods]) -> dict:
+    """period_start/period_end for a chunk's filing; omitted when unknown."""
+    start, end = (periods or {}).get(source_file, (None, None))
+    props = {}
+    if start:
+        props["period_start"] = to_rfc3339(start)
+    if end:
+        props["period_end"] = to_rfc3339(end)
+    return props
 
 
 # ── Connection ────────────────────────────────────────────────────────────────
@@ -62,6 +97,7 @@ def ensure_schema(client: weaviate.WeaviateClient, config: WeaviateConfig) -> No
     """Create the SecDocument collection if it does not already exist."""
     if client.collections.exists(config.collection_name):
         logger.info("Collection '%s' already exists – skipping creation.", config.collection_name)
+        _ensure_period_properties(client, config.collection_name)
         return
 
     client.collections.create(
@@ -81,6 +117,7 @@ def ensure_schema(client: weaviate.WeaviateClient, config: WeaviateConfig) -> No
             Property(name="page_start",  data_type=DataType.INT),
             Property(name="page_end",    data_type=DataType.INT),
             Property(name="token_count", data_type=DataType.INT),
+            *_PERIOD_PROPERTIES,
             # Content field – BM25-indexed for hybrid search
             Property(
                 name="chunk_text",
@@ -114,6 +151,7 @@ def store_chunks(
     chunks: List[TextChunk],
     embeddings: List[List[float]],
     config: WeaviateConfig,
+    periods: Optional[FilingPeriods] = None,
 ) -> int:
     """
     Batch-insert chunks with their embedding vectors.
@@ -140,6 +178,7 @@ def store_chunks(
                     "page_start":  chunk.page_start,
                     "page_end":    chunk.page_end,
                     "token_count": chunk.token_count,
+                    **_period_properties(chunk.source_file, periods),
                 },
                 vector=vector,
                 uuid=_chunk_uuid(chunk),
@@ -176,6 +215,7 @@ def ensure_schema_smart(client: weaviate.WeaviateClient, config: WeaviateConfig)
             "Collection '%s' already exists – skipping creation.",
             config.smart_collection_name,
         )
+        _ensure_period_properties(client, config.smart_collection_name)
         return
 
     client.collections.create(
@@ -200,6 +240,7 @@ def ensure_schema_smart(client: weaviate.WeaviateClient, config: WeaviateConfig)
             Property(name="page_num",          data_type=DataType.INT),
             Property(name="token_count",       data_type=DataType.INT),
             Property(name="last_updated_date", data_type=DataType.TEXT, index_searchable=False),
+            *_PERIOD_PROPERTIES,
             # Content fields – BM25-indexed for hybrid search
             Property(
                 name="parent_text",
@@ -237,6 +278,7 @@ def store_smart_chunks(
     chunks: List[SmartTextChunk],
     embeddings: List[List[float]],
     config: WeaviateConfig,
+    periods: Optional[FilingPeriods] = None,
 ) -> int:
     """
     Batch-insert smart chunks with their context_window embedding vectors.
@@ -269,6 +311,7 @@ def store_smart_chunks(
                     "page_num":          chunk.page_num,
                     "token_count":       chunk.token_count,
                     "last_updated_date": chunk.last_updated_date,
+                    **_period_properties(chunk.source_file, periods),
                 },
                 vector=vector,
                 uuid=_smart_chunk_uuid(chunk),
@@ -307,6 +350,7 @@ def ensure_schema_semantic(client: weaviate.WeaviateClient, config: WeaviateConf
             "Collection '%s' already exists – skipping creation.",
             config.semantic_collection_name,
         )
+        _ensure_period_properties(client, config.semantic_collection_name)
         return
 
     client.collections.create(
@@ -332,6 +376,7 @@ def ensure_schema_semantic(client: weaviate.WeaviateClient, config: WeaviateConf
             Property(name="section_title",     data_type=DataType.TEXT, index_searchable=False),
             Property(name="content_hash",      data_type=DataType.TEXT, index_searchable=False),
             Property(name="last_updated_date", data_type=DataType.TEXT, index_searchable=False),
+            *_PERIOD_PROPERTIES,
             # raw_content: LLM display only — not BM25, not vectorized
             Property(
                 name="raw_content",
@@ -367,6 +412,7 @@ def store_semantic_chunks(
     chunks: List[SemanticTextChunk],
     embeddings: List[List[float]],
     config: WeaviateConfig,
+    periods: Optional[FilingPeriods] = None,
 ) -> int:
     """
     Batch-insert semantic chunks with their BGE-M3 embedding vectors.
@@ -399,6 +445,7 @@ def store_semantic_chunks(
                     "page_num":          chunk.page_num,
                     "token_count":       chunk.token_count,
                     "last_updated_date": chunk.last_updated_date,
+                    **_period_properties(chunk.source_file, periods),
                 },
                 vector=vector,
                 uuid=_semantic_chunk_uuid(chunk),

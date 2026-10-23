@@ -197,7 +197,7 @@ def scan_history() -> List[HistoryRunSummary]:
 # ═════════════════════════════════════════════════════════════════════════════
 
 def compute_run_tag(params: EvaluationRunParams) -> str:
-    chunking_strategy = resolve_chunking_strategy(params.chunking_strategy, params.use_smart)
+    chunking_strategy = resolve_chunking_strategy(params.chunking_strategy, params.use_smart, params.agentic)
     return build_run_tag(
         engine=params.engine,
         chunking_strategy=chunking_strategy,
@@ -215,7 +215,8 @@ def compute_run_tag(params: EvaluationRunParams) -> str:
         max_per_entity=params.max_per_entity,
         question_type=params.question_type,
         seed=params.seed,
-        use_tools=params.use_tools,
+        agentic=params.agentic,
+        judge_model=_config.evaluation.model,
     )
 
 
@@ -227,7 +228,7 @@ def find_matches(params: EvaluationRunParams) -> Tuple[Optional[HistoryRunSummar
     candidates = [e for e in history if Path(e.csv_path).name == exact_filename]
     exact = next((e for e in candidates if e.source == "root"), None) or (candidates[0] if candidates else None)
 
-    resolved_chunking = resolve_chunking_strategy(params.chunking_strategy, params.use_smart)
+    resolved_chunking = resolve_chunking_strategy(params.chunking_strategy, params.use_smart, params.agentic)
     resolved_mode = params.retrieval_mode or _config.retrieval.mode
     requested = {
         "engine": params.engine,
@@ -444,7 +445,7 @@ def build_argv(params: EvaluationRunParams) -> List[str]:
     """Build the CLI argv for scripts/run_evaluation.py, only appending a flag
     when the corresponding field is explicitly set (mirrors CLI optionality
     exactly, so the run tag the CLI computes matches compute_run_tag())."""
-    chunking_strategy = resolve_chunking_strategy(params.chunking_strategy, params.use_smart)
+    chunking_strategy = resolve_chunking_strategy(params.chunking_strategy, params.use_smart, params.agentic)
     argv: List[str] = [
         "--engine", params.engine,
         "--chunking-strategy", chunking_strategy,
@@ -482,8 +483,8 @@ def build_argv(params: EvaluationRunParams) -> List[str]:
         argv += ["--skip-ragas"]
     if params.input_path:
         argv += ["--input", params.input_path]
-    if params.use_tools:
-        argv += ["--use-tools"]
+    if params.agentic:
+        argv += ["--agentic"]
     return argv
 
 

@@ -1,14 +1,26 @@
 """Pydantic request/response models for the RAG API."""
 from datetime import datetime
-from typing import List, Literal, Optional
+from typing import Any, Dict, List, Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator
 
 
 class ChatRequest(BaseModel):
     query: str = Field(..., min_length=1, description="The question to answer")
-    top_k: int = Field(default=5, ge=1, le=20, description="Number of chunks to retrieve")
-    # Optional metadata filters – narrow retrieval to specific filings
+    # chunking_strategy / retrieval_alpha / top_k left null fall back to
+    # server defaults (src/config.py ChatConfig: parent_child / 0.25 / 10).
+    top_k: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=20,
+        description=(
+            "Chunks to retrieve per agent search; with rerank enabled, 3x this "
+            "many candidates are fetched and reranked down to rerank_top_k. "
+            "Defaults to CHAT_TOP_K (10)."
+        ),
+    )
+    # Optional metadata filters – pin every agent search to specific filings
+    # (otherwise the agent picks filters per search itself)
     company: Optional[str] = Field(default=None, description="Ticker symbol filter, e.g. 'AAPL'")
     year: Optional[int] = Field(default=None, description="Filing year filter, e.g. 2023")
     quarter: Optional[str] = Field(default=None, description="Quarter filter, e.g. 'Q2'")
@@ -24,7 +36,8 @@ class ChatRequest(BaseModel):
             "'basic' → SecDocument, "
             "'parent_child' → SecDocumentSmart, "
             "'semantic' → DocumentChunk (BGE-M3). "
-            "When null, falls back to use_smart for compatibility."
+            "When null: 'parent_child' if use_smart, else CHAT_CHUNKING_STRATEGY "
+            "(default 'parent_child')."
         ),
     )
     use_smart: bool = Field(
@@ -34,35 +47,48 @@ class ChatRequest(BaseModel):
             "Ignored when chunking_strategy is provided."
         ),
     )
-    # Optional re-ranking after initial retrieval (None = disabled)
+    # Re-ranking after initial retrieval
     rerank_mode: Optional[str] = Field(
         default=None,
         description=(
-            "Re-rank over-fetched candidates before generation. "
+            "Re-rank over-fetched candidates before they reach the agent. "
             "'llm': one gpt-4o-mini call ranks all candidates. "
             "'cross_encoder': local sentence-transformers (no API cost). "
-            "null/omit to skip re-ranking."
+            "'none': no re-ranking. "
+            "null/omit: CHAT_RERANK_MODE (default 'cross_encoder')."
         ),
     )
-    # Filter extraction mode when company/year/quarter are not passed explicitly
+    rerank_top_k: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=20,
+        description=(
+            "Chunks kept per search after re-ranking. Ignored when re-ranking "
+            "is disabled. Defaults to CHAT_RERANK_TOP_K (6)."
+        ),
+    )
+    # Kept for request compatibility only — /chat is agentic and the agent
+    # chooses company/year/quarter filters per search itself.
     filter_mode: str = Field(
         default="llm",
         description=(
-            "'llm' (default): extract company/year/quarter from query text via LLM. "
-            "'regex': rule-based extraction, no LLM cost. "
-            "Ignored if company/year/quarter are provided explicitly."
+            "Unused by /chat: the agent chooses company/year/quarter filters "
+            "for each search itself. Accepted for backward compatibility."
         ),
     )
     # Per-request retrieval mode override (falls back to RETRIEVAL_MODE env var)
     retrieval_mode: Optional[str] = Field(
         default=None,
-        description="Override retrieval mode: 'semantic' or 'hybrid'. Defaults to server config.",
+        description="Override retrieval mode: 'semantic' or 'hybrid'. Defaults to CHAT_RETRIEVAL_MODE ('hybrid').",
     )
     retrieval_alpha: Optional[float] = Field(
         default=None,
         ge=0.0,
         le=1.0,
-        description="BM25/vector balance for hybrid mode (0=BM25, 1=vector). Defaults to server config.",
+        description=(
+            "BM25/vector balance for hybrid mode (0=BM25, 1=vector). "
+            "Defaults to CHAT_RETRIEVAL_ALPHA (0.25)."
+        ),
     )
 
 
@@ -76,13 +102,48 @@ class SourceDocument(BaseModel):
     page_end: int
     score: float = Field(description="Similarity score in [0, 1], higher = more relevant")
     text_preview: str = Field(description="First 200 characters of the chunk")
+    repeats_sources: Optional[List[int]] = Field(
+        default=None,
+        description="Set on repeated_sources entries: the [Source N] numbers this passage repeats.",
+    )
+
+
+class ToolCallTrace(BaseModel):
+    """One tool call the agent made while answering (src/agentic/tools.py)."""
+    name: str
+    arguments: Dict[str, Any]
+    result: Optional[Dict[str, Any]] = None
+    error: Optional[str] = None
 
 
 class ChatResponse(BaseModel):
     answer: str
-    sources: List[SourceDocument]
+    sources: List[SourceDocument] = Field(
+        description="Every chunk the agent retrieved; sources[i] is [Source i+1] in the answer.",
+    )
     query: str
     chunks_retrieved: int
+    tool_calls: List[ToolCallTrace] = Field(
+        default_factory=list,
+        description="Searches and calculations the agent ran, in order.",
+    )
+    repeated_sources: List[SourceDocument] = Field(
+        default_factory=list,
+        description=(
+            "Passages from other filings that repeat a numbered source's text "
+            "(collapsed in the agent's prompt). They back claims that something "
+            "was reported unchanged in those filings."
+        ),
+    )
+    agent_iterations: int = Field(default=0, description="LLM turns the agent loop took.")
+    agent_plan: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Structured plan (plan_research arguments) the agent made in its first turn.",
+    )
+    agent_topics: Optional[List[Dict[str, Any]]] = Field(
+        default=None,
+        description="Topic inventory (list_topics) the answer was written from; broad questions only.",
+    )
 
 
 # ═════════════════════════════════════════════════════════════════════════════
@@ -149,16 +210,14 @@ class EvaluationRunParams(BaseModel):
             "Defaults to ceil(top_k / n_entities), minimum 2."
         ),
     )
-    use_tools: bool = Field(
+    agentic: bool = Field(
         default=False,
         description=(
-            "Run the router+calculator step (src/generation/agent.py "
-            "route_and_calculate) on top of generation, same as /chat: a "
-            "lightweight classifier decides whether a question needs a "
-            "computed value (change/trend/ratio/share-of-total/comparison) "
-            "and, if so, runs the matching FinancialAnalyticsTools function "
-            "in Python before the answer is generated. Default off, so "
-            "existing evaluation runs are unaffected."
+            "Answer with the agentic tool-calling loop (src/agentic/agent.py), "
+            "same as /chat: the model decides which searches to run (through "
+            "this run's retrieval settings) and which FinancialAnalyticsTools "
+            "calculator to call, instead of one retrieval + one generation. "
+            "Default off, so existing evaluation runs are unaffected."
         ),
     )
     samples: int = Field(default=25, ge=1, le=500)

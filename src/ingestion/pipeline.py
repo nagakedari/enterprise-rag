@@ -176,6 +176,9 @@ def run_ingestion_pipeline(
     logger.info("[1/4] Parsing PDFs …")
     documents = parse_all_pdfs(config.docs_path)
     logger.info("      → %d documents parsed", len(documents))
+    # Taken from the freshly parsed documents (not the chunk checkpoints), so
+    # chunks loaded from older checkpoints still get their filing's period.
+    periods = {doc.source_file: (doc.period_start, doc.period_end) for doc in documents}
 
     # ── Step 2: Chunk per PDF ─────────────────────────────────────────────────
     logger.info("[2/4] Chunking documents  [mode=%s] …", mode)
@@ -270,19 +273,19 @@ def run_ingestion_pipeline(
             if recreate_collection:
                 weaviate_store.drop_collection_smart(client, config.weaviate)
             weaviate_store.ensure_schema_smart(client, config.weaviate)
-            stored = weaviate_store.store_smart_chunks(client, chunks, embeddings, config.weaviate)
+            stored = weaviate_store.store_smart_chunks(client, chunks, embeddings, config.weaviate, periods)
             total_in_db = weaviate_store.get_total_count_smart(client, config.weaviate)
         elif chunking_strategy == "semantic":
             if recreate_collection:
                 weaviate_store.drop_collection_semantic(client, config.weaviate)
             weaviate_store.ensure_schema_semantic(client, config.weaviate)
-            stored = weaviate_store.store_semantic_chunks(client, chunks, embeddings, config.weaviate)
+            stored = weaviate_store.store_semantic_chunks(client, chunks, embeddings, config.weaviate, periods)
             total_in_db = weaviate_store.get_total_count_semantic(client, config.weaviate)
         else:
             if recreate_collection:
                 weaviate_store.drop_collection(client, config.weaviate)
             weaviate_store.ensure_schema(client, config.weaviate)
-            stored = weaviate_store.store_chunks(client, chunks, embeddings, config.weaviate)
+            stored = weaviate_store.store_chunks(client, chunks, embeddings, config.weaviate, periods)
             total_in_db = weaviate_store.get_total_count(client, config.weaviate)
         logger.info("      → %d chunks stored  (total in DB: %d)", stored, total_in_db)
     finally:

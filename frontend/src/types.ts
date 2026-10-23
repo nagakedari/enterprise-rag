@@ -31,7 +31,7 @@ export interface EvaluationRunParams {
   per_filing: boolean;
   chunks_per_filing: number;
   max_per_entity: number | null;
-  use_tools: boolean;
+  agentic: boolean;
   samples: number;
   company: string | null;
   question_type: string | null;
@@ -152,7 +152,7 @@ export const DEFAULT_PARAMS: EvaluationRunParams = {
   per_filing: false,
   chunks_per_filing: 3,
   max_per_entity: null,
-  use_tools: false,
+  agentic: false,
   samples: 25,
   company: null,
   question_type: null,

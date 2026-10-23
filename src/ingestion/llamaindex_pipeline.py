@@ -27,6 +27,7 @@ from typing import Optional
 import tiktoken
 
 from src.config import Config
+from src.ingestion.filing_period import extract_filing_period
 from src.ingestion.weaviate_store import get_client
 
 logger = logging.getLogger(__name__)
@@ -34,6 +35,31 @@ logger = logging.getLogger(__name__)
 # ── Metadata extraction ────────────────────────────────────────────────────────
 
 _FILENAME_RE = re.compile(r"^(\d{4})\s+(Q[1-4])\s+([A-Z]+)$", re.IGNORECASE)
+
+# Period metadata is for filtering only — kept out of the embedded / LLM text.
+_PERIOD_KEYS = ["period_start", "period_end"]
+
+
+def _yyyymmdd(value) -> Optional[int]:
+    return int(value.strftime("%Y%m%d")) if value else None
+
+
+def _period_metadata(filepath: str) -> dict:
+    """
+    period_start / period_end as YYYYMMDD ints (LlamaIndex metadata filters
+    compare numbers reliably; the custom collections use Weaviate DATE).
+    Read from the PDF cover page — see src/ingestion/filing_period.py.
+    """
+    import fitz  # PyMuPDF
+
+    with fitz.open(filepath) as doc:
+        # Cover page for the end date, statement headers for the start
+        pages = [doc[i].get_text("text") for i in range(min(12, len(doc)))]
+    start, end = extract_filing_period(pages)
+    if end is None:
+        logger.warning("No cover-page period found in %s — no period metadata.", Path(filepath).name)
+        return {}
+    return {"period_start": _yyyymmdd(start), "period_end": _yyyymmdd(end)}
 
 
 def _file_metadata(filepath: str) -> dict:
@@ -52,6 +78,7 @@ def _file_metadata(filepath: str) -> dict:
             "quarter":  m.group(2).upper(),
             "company":  m.group(3).upper(),
             "file_name": name,
+            **_period_metadata(filepath),
         }
     logger.warning("Could not parse metadata from filename: %s", name)
     return {"file_name": name}
@@ -126,6 +153,9 @@ def run_llamaindex_pipeline(
         file_metadata=_file_metadata,
     )
     documents = reader.load_data()
+    for doc in documents:
+        doc.excluded_embed_metadata_keys = [*doc.excluded_embed_metadata_keys, *_PERIOD_KEYS]
+        doc.excluded_llm_metadata_keys = [*doc.excluded_llm_metadata_keys, *_PERIOD_KEYS]
     logger.info("      → %d document pages loaded", len(documents))
 
     # ── Step 2: Parse into nodes ───────────────────────────────────────────────

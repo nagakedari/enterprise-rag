@@ -99,6 +99,7 @@ enterprise-rag/
 │   ├── config.py              # All config, read from env vars
 │   ├── ingestion/
 │   │   ├── pdf_parser.py       # PDF → ParsedDocument (page text + metadata)
+│   │   ├── filing_period.py    # Fiscal-quarter dates (period_start/end) from each 10-Q cover
 │   │   ├── chunker.py          # Basic token-based chunking
 │   │   ├── smart_chunker.py    # Parent-child chunking (section-aware)
 │   │   ├── semantic_chunker.py # Semantic chunking (BGE-M3 boundaries)
@@ -112,13 +113,19 @@ enterprise-rag/
 │   │   ├── reranker.py          # LLM / cross-encoder reranking + diversity selection
 │   │   └── query_filters.py     # Company/year/quarter extraction from a question
 │   ├── generation/
-│   │   └── generator.py         # Answer generation from retrieved chunks
+│   │   ├── generator.py         # Answer generation from retrieved chunks
+│   │   ├── tools.py             # FinancialAnalyticsTools calculators (Python math)
+│   │   ├── router.py            # Deterministic router (baseline pipeline)
+│   │   └── agent.py             # Deterministic router→calculate pipeline (scripts/run_agent.py)
+│   ├── agentic/
+│   │   ├── agent.py             # Agentic tool-calling loop (used by /chat and --agentic)
+│   │   └── tools.py             # search_filings tool + calculator registry/executor
 │   ├── evaluation/
 │   │   ├── evaluator.py         # Orchestrates all 10 metrics (RAGAS + custom)
 │   │   ├── metrics.py           # Custom metric implementations
 │   │   └── run_tag.py           # Shared run-tag naming, used by CLI + API
 │   └── api/
-│       ├── main.py              # FastAPI app (chat endpoint + evaluation router)
+│       ├── main.py              # FastAPI app (agentic chat endpoint + evaluation router)
 │       ├── models.py            # Pydantic request/response models
 │       ├── evaluation_routes.py # Evaluation HTTP endpoints
 │       └── evaluation_service.py # History scan/lookup + subprocess job runner

@@ -40,12 +40,24 @@ Usage:
     # Hybrid mode, semantic collection (uses BGE-M3 for query embedding)
     chunks = retrieve("Apple revenue", config,
                       collection_name=config.weaviate.semantic_collection_name)
+
+    # Only the filing whose fiscal quarter contains a date
+    chunks = retrieve("Apple net sales", config, company="AAPL",
+                      period_date=date(2023, 7, 1))
+
+Date filtering uses the period_start / period_end DATE properties written at
+ingestion (src/ingestion/filing_period.py). Filing labels (year / quarter)
+are this dataset's names, not calendar quarters — the quarter ended
+July 1, 2023 is "2023 Q3" for AAPL but "2023 Q2" for INTC — so period_date
+is the reliable way to target a period given as a date.
 """
 import logging
 from dataclasses import dataclass, field
+from datetime import date, datetime, timezone
 from typing import List, Optional
 
 import weaviate
+from weaviate.classes.aggregate import GroupByAggregate
 from weaviate.classes.query import MetadataQuery, Filter
 
 from src.config import Config
@@ -77,6 +89,9 @@ class RetrievedChunk:
                         # RRF fusion score  (hybrid mode, higher = better)
                         # set to 0.0 for semantic mode
     section_title: str = field(default="")
+    # Fiscal quarter the chunk's filing covers (None for pre-period ingests)
+    period_start: Optional[date] = field(default=None)
+    period_end: Optional[date] = field(default=None)
 
     @property
     def score(self) -> float:
@@ -96,6 +111,7 @@ def _build_filters(
     company: Optional[str],
     year: Optional[int],
     quarter: Optional[str],
+    period_date: Optional[date] = None,
 ) -> Optional[Filter]:
     """AND-combine any provided metadata filters."""
     parts: List[Filter] = []
@@ -105,6 +121,11 @@ def _build_filters(
         parts.append(Filter.by_property("year").equal(year))
     if quarter:
         parts.append(Filter.by_property("quarter").equal(quarter))
+    if period_date is not None:
+        # Filing whose fiscal quarter contains the date
+        moment = datetime(period_date.year, period_date.month, period_date.day, tzinfo=timezone.utc)
+        parts.append(Filter.by_property("period_start").less_or_equal(moment))
+        parts.append(Filter.by_property("period_end").greater_or_equal(moment))
 
     if not parts:
         return None
@@ -112,6 +133,15 @@ def _build_filters(
     for f in parts[1:]:
         result = result & f
     return result
+
+
+def _as_date(value) -> Optional[date]:
+    """Weaviate returns DATE properties as datetimes; older objects lack them."""
+    if isinstance(value, datetime):
+        return value.date()
+    if isinstance(value, str) and value:
+        return datetime.fromisoformat(value.replace("Z", "+00:00")).date()
+    return None
 
 
 def _map_object(
@@ -152,6 +182,8 @@ def _map_object(
         distance=distance,
         search_score=search_score,
         section_title=section_title,
+        period_start=_as_date(p.get("period_start")),
+        period_end=_as_date(p.get("period_end")),
     )
 
 
@@ -353,6 +385,7 @@ def retrieve(
     collection_name: Optional[str] = None,
     mode: Optional[str] = None,
     alpha: Optional[float] = None,
+    period_date: Optional[date] = None,
 ) -> List[RetrievedChunk]:
     """
     Retrieve the top-k most relevant chunks for *query*.
@@ -371,6 +404,8 @@ def retrieve(
         alpha:           BM25/vector balance for hybrid mode (0–1).
                          Defaults to config.retrieval.alpha
                          (env: RETRIEVAL_HYBRID_ALPHA).
+        period_date:     Only chunks from the filing whose fiscal quarter
+                         contains this date (period_start <= date <= period_end).
 
     Returns:
         List of RetrievedChunk ordered by relevance (best first).
@@ -383,12 +418,12 @@ def retrieve(
 
     logger.info(
         "retrieve  mode=%s  alpha=%.2f  collection=%s  top_k=%d  "
-        "query=%r  filters=(company=%s year=%s quarter=%s)",
+        "query=%r  filters=(company=%s year=%s quarter=%s period_date=%s)",
         effective_mode, effective_alpha, target_collection, top_k,
-        query, company, year, quarter,
+        query, company, year, quarter, period_date,
     )
 
-    filters = _build_filters(company, year, quarter)
+    filters = _build_filters(company, year, quarter, period_date)
 
     # Fetch extra candidates for smart collection to compensate for parent dedup
     fetch_limit = top_k * 3 if is_smart else top_k
@@ -446,3 +481,53 @@ def retrieve(
             len(chunks), chunks[0].score, effective_mode,
         )
     return chunks
+
+
+# ── Filing catalog ────────────────────────────────────────────────────────────
+
+@dataclass
+class FilingPeriod:
+    company: str
+    year: int
+    quarter: str
+    source_file: str
+    period_start: Optional[date]
+    period_end: Optional[date]
+
+
+def list_filing_periods(config: Config, collection_name: Optional[str] = None) -> List[FilingPeriod]:
+    """
+    One row per filing in *collection_name*: its label (year / quarter) and
+    the fiscal quarter it covers. Read live from the indexed data — nothing to
+    rebuild when new filings are ingested. ~1 aggregate + 1 query per filing.
+    """
+    target_collection = collection_name or config.weaviate.collection_name
+    client: weaviate.WeaviateClient = get_client(config.weaviate)
+    rows: List[FilingPeriod] = []
+    try:
+        collection = client.collections.get(target_collection)
+        groups = collection.aggregate.over_all(
+            group_by=GroupByAggregate(prop="source_file"), total_count=True,
+        ).groups
+        for group in groups:
+            source_file = group.grouped_by.value
+            result = collection.query.fetch_objects(
+                filters=Filter.by_property("source_file").equal(source_file),
+                limit=1,
+                return_properties=["company", "year", "quarter", "period_start", "period_end"],
+            )
+            if not result.objects:
+                continue
+            p = result.objects[0].properties
+            rows.append(FilingPeriod(
+                company=p.get("company", ""),
+                year=int(p.get("year", 0)),
+                quarter=p.get("quarter", ""),
+                source_file=source_file,
+                period_start=_as_date(p.get("period_start")),
+                period_end=_as_date(p.get("period_end")),
+            ))
+    finally:
+        client.close()
+    rows.sort(key=lambda r: (r.company, r.period_end or date.min, r.source_file))
+    return rows

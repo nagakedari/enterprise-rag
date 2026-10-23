@@ -23,12 +23,9 @@ by the model turn by turn. Total LLM calls per question is fixed at 2 or 3
 (router, optional argument-extraction, synthesis) instead of open-ended.
 
 `answer_question()` below is the standalone pipeline (its own retrieval via
-_execute_retrieval). Callers with their own already-configurable retrieval —
-src/api/main.py's /chat endpoint and scripts/run_evaluation.py — use
-`route_and_calculate()` instead: it applies just the classify-then-calculate
-half of this pipeline on top of chunks they retrieved themselves, so the
-identical calculation step (and identical "insufficient data" handling) runs
-in all three places without being copy-pasted three times.
+_execute_retrieval), run by scripts/run_agent.py. /chat and the evaluation
+CLI use the fully agentic loop in src/agentic/ instead, where the model
+decides these steps itself; this module is kept as the fixed-cost baseline.
 """
 import json
 import logging
@@ -138,23 +135,6 @@ def run_calculation(
             decision.calculation_tool, arguments, exc,
         )
         return None
-
-
-def route_and_calculate(
-    query: str,
-    chunks: List[RetrievedChunk],
-    config: Config,
-) -> Optional[Dict[str, Any]]:
-    """
-    Classify whether `query` needs a computed value on top of already-
-    retrieved `chunks`, and run it if so. For callers that already have their
-    own configurable retrieval pipeline (src/api/main.py's /chat endpoint,
-    scripts/run_evaluation.py) and only want the calculation half of the
-    router's decision — see answer_question() below for the standalone
-    pipeline that also acts on the router's retrieval decision.
-    """
-    decision = classify(query, config)
-    return run_calculation(decision, query, chunks, config)
 
 
 def answer_question(query: str, config: Config) -> AgentResult:

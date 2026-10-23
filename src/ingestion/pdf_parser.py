@@ -12,10 +12,13 @@ Phase-1 note (demo limitation):
 import logging
 import re
 from dataclasses import dataclass, field
+from datetime import date
 from pathlib import Path
-from typing import List
+from typing import List, Optional
 
 import fitz  # PyMuPDF
+
+from src.ingestion.filing_period import extract_filing_period
 
 logger = logging.getLogger(__name__)
 
@@ -36,6 +39,10 @@ class ParsedDocument:
     year: int           # e.g. 2023
     pages: List[PageText] = field(default_factory=list)
     total_pages: int = 0
+    # Fiscal period the filing covers, read from its cover page
+    # (src/ingestion/filing_period.py); None if it couldn't be found.
+    period_start: Optional[date] = None
+    period_end: Optional[date] = None
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -81,9 +88,17 @@ def parse_pdf(pdf_path: Path) -> ParsedDocument:
             if cleaned:
                 pages.append(PageText(page_num=page_num, text=cleaned))
 
+    period_start, period_end = extract_filing_period(p.text for p in pages)
+    if period_end is None:
+        logger.warning(
+            "No 'quarterly period ended' date found on the cover of '%s' — its "
+            "chunks get no period_start/period_end and won't match date filters.",
+            pdf_path.name,
+        )
+
     logger.info(
-        "Parsed '%s'  company=%s  quarter=%s %s  pages=%d  non-empty=%d",
-        pdf_path.name, company, quarter, year, total_pages, len(pages),
+        "Parsed '%s'  company=%s  quarter=%s %s  period=%s..%s  pages=%d  non-empty=%d",
+        pdf_path.name, company, quarter, year, period_start, period_end, total_pages, len(pages),
     )
     return ParsedDocument(
         source_file=pdf_path.name,
@@ -92,6 +107,8 @@ def parse_pdf(pdf_path: Path) -> ParsedDocument:
         year=year,
         pages=pages,
         total_pages=total_pages,
+        period_start=period_start,
+        period_end=period_end,
     )
 
 

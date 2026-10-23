@@ -16,6 +16,7 @@ Mode / alpha are read from config.retrieval (env: RETRIEVAL_MODE /
 RETRIEVAL_HYBRID_ALPHA) and can be overridden per call.
 """
 import logging
+from datetime import date, datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -24,6 +25,13 @@ from src.ingestion.weaviate_store import get_client
 from src.retrieval.retriever import RetrievedChunk   # reuse existing dataclass
 
 logger = logging.getLogger(__name__)
+
+
+def _yyyymmdd_to_date(value) -> Optional[date]:
+    try:
+        return datetime.strptime(str(int(value)), "%Y%m%d").date()
+    except (TypeError, ValueError):
+        return None
 
 
 def retrieve_llamaindex(
@@ -36,6 +44,7 @@ def retrieve_llamaindex(
     use_smart: bool = False,
     mode: Optional[str] = None,
     alpha: Optional[float] = None,
+    period_date: Optional[date] = None,
 ) -> List[RetrievedChunk]:
     """
     Retrieve the top-k most relevant chunks using LlamaIndex + Weaviate.
@@ -53,6 +62,8 @@ def retrieve_llamaindex(
         mode:      "semantic" or "hybrid".  Defaults to config.retrieval.mode.
         alpha:     BM25/vector balance for hybrid (0–1).
                    Defaults to config.retrieval.alpha.
+        period_date: Only nodes from the filing whose fiscal quarter contains
+                   this date (YYYYMMDD period_start/period_end metadata).
 
     Returns:
         List of RetrievedChunk ordered by relevance (best first).
@@ -98,6 +109,10 @@ def retrieve_llamaindex(
         filter_list.append(
             MetadataFilter(key="quarter", value=quarter, operator=FilterOperator.EQ)
         )
+    if period_date is not None:
+        day = int(period_date.strftime("%Y%m%d"))
+        filter_list.append(MetadataFilter(key="period_start", value=day, operator=FilterOperator.LTE))
+        filter_list.append(MetadataFilter(key="period_end", value=day, operator=FilterOperator.GTE))
     filters = MetadataFilters(filters=filter_list) if filter_list else None
 
     # ── Connect to Weaviate ────────────────────────────────────────────────────
@@ -205,6 +220,8 @@ def retrieve_llamaindex(
             distance=distance,
             search_score=search_score,
             section_title=str(meta.get("section_title", "")),
+            period_start=_yyyymmdd_to_date(meta.get("period_start")),
+            period_end=_yyyymmdd_to_date(meta.get("period_end")),
         ))
 
     logger.info(
