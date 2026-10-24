@@ -74,11 +74,30 @@ _PLAN_TOOL: Dict[str, Any] = {
             "Record your research plan before searching: the sub-topics the "
             "answer needs, and for each one which companies, filing periods "
             "and part of the 10-Q to search, plus the search query to use. A "
-            "single-fact question gets a one-item plan."
+            "single-fact question gets a one-item plan. A message that needs "
+            "no filing data gets requires_filings=false and a direct_reply "
+            "instead of sub-topics."
         ),
         "parameters": {
             "type": "object",
             "properties": {
+                "requires_filings": {
+                    "type": "boolean",
+                    "description": (
+                        "False for greetings, thanks, small talk, questions about "
+                        "this assistant, or anything that does not need SEC 10-Q "
+                        "information. Nothing is searched when false."
+                    ),
+                },
+                "direct_reply": {
+                    "type": "string",
+                    "description": (
+                        "Only when requires_filings is false: the complete, brief "
+                        "reply to the user (e.g. a greeting that says you answer "
+                        "questions about the companies' SEC 10-Q filings). No "
+                        "financial facts or figures."
+                    ),
+                },
                 "sub_topics": {
                     "type": "array",
                     "minItems": 1,
@@ -122,7 +141,7 @@ _PLAN_TOOL: Dict[str, Any] = {
                     "description": "True when the question asks how something changed or evolved over time.",
                 },
             },
-            "required": ["sub_topics", "compare_across_periods"],
+            "required": ["requires_filings", "compare_across_periods"],
         },
     },
 }
@@ -476,6 +495,14 @@ class AgentToolExecutor:
         return json.dumps(result)
 
     def _record_plan(self, arguments: Dict[str, Any]) -> str:
+        if arguments.get("requires_filings") is False:
+            # Greeting / small talk / off-topic: answered from the plan's
+            # direct_reply without any retrieval (see agent.run_agent).
+            self.plan = arguments
+            logger.info("Agent plan: no filings needed — direct reply")
+            self.records.append(ToolCallRecord(name=PLAN_TOOL_NAME, arguments=arguments, result={"recorded": True}))
+            return "No filing search needed."
+
         sub_topics = arguments.get("sub_topics")
         if not isinstance(sub_topics, list) or not sub_topics:
             return self._error(PLAN_TOOL_NAME, arguments, "sub_topics must be a non-empty list")

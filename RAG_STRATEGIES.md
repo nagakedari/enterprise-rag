@@ -687,6 +687,27 @@ reranking and diversity. `src/retrieval/reranker.py` now logs the real
 import error and says reranking and diversity were skipped. Re-run
 everything in `rag_venv`.
 
+### No retrieval for greetings / generic messages
+
+**Files:** `src/agentic/tools.py` (`plan_research` gains `requires_filings`
+and `direct_reply`), `src/agentic/agent.py` (new instruction plus an early
+return in the loop).
+
+The forced plan call already runs first on every message, so it also
+decides whether filings are needed at all. For greetings, thanks, small
+talk, questions about the assistant, or unrelated requests, it sets
+`requires_filings=false` and writes `direct_reply`. The loop then returns
+that reply: no searches, no reranking, no topic list. The whole request is
+one gpt-4o call. If `direct_reply` is empty, one extra call writes the reply.
+
+Live check, planning call only: 11/11 messages classified correctly. The
+six non-filing messages were "hi", "hello, how are you", "thanks", "what
+can you do", weather, and a joke. The five filing questions included the
+mixed "hi! what was Apple's iPhone revenue last quarter?", which still
+searches. Cost about $0.10 for the 11 calls. `/chat` "hello": 0 vector
+searches, 0 sources, 1 LLM turn. Minor: "Tell me a joke" got a joke rather
+than a redirect to 10-Q questions.
+
 ### Agentic vs single-pass on the best retrieval config (rag_venv, gpt-4.1 judge)
 
 Setup: `qna_data_gold_page_present_25.csv` (25 questions: 9 single-chunk,

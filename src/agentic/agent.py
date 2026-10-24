@@ -52,6 +52,11 @@ _AGENT_INSTRUCTIONS = """
 
 AGENT MODE — you have tools and decide yourself how to use them:
 
+- NO RETRIEVAL FOR NON-FILING MESSAGES. If the message is a greeting, thanks, \
+small talk, a question about you, or anything else that does not need SEC 10-Q \
+information, call plan_research with requires_filings=false and put a brief \
+reply in direct_reply (for an unrelated request, say you answer questions \
+about these companies' 10-Q filings). Do not plan sub-topics or search for it.
 - Your first action is always plan_research. For a single-fact question the \
 plan is one sub-topic. For a broad, multi-part or multi-period question, list \
 every sub-topic the answer needs. A 10-Q discusses the same subject in \
@@ -269,6 +274,14 @@ def run_agent(
             return _result(message.content, executor, iteration)
 
         run_tool_calls(message)
+        plan = executor.plan or {}
+        if iteration == 1 and plan.get("requires_filings") is False:
+            # Nothing to look up: reply without retrieval or further LLM turns
+            # (one more cheap call only if the planner left direct_reply empty).
+            reply = (plan.get("direct_reply") or "").strip()
+            if reply:
+                return _result(reply, executor, iteration)
+            return _result(complete("none", config.model).content, executor, iteration + 1)
 
     logger.warning(
         "Agent hit max_iterations=%d for %r — forcing a final answer from %d sources",
