@@ -117,6 +117,7 @@ enterprise-rag/
 │   │   ├── tools.py             # FinancialAnalyticsTools calculators (Python math)
 │   │   ├── router.py            # Deterministic router (baseline pipeline)
 │   │   └── agent.py             # Deterministic router→calculate pipeline (scripts/run_agent.py)
+│   ├── conversation/            # Multi-turn: store (SQLite), memory, follow-up rewriting (MULTI_TURN_STRATEGIES.md)
 │   ├── agentic/
 │   │   ├── agent.py             # Agentic tool-calling loop (used by /chat and --agentic)
 │   │   └── tools.py             # search_filings tool + calculator registry/executor

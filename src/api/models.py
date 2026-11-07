@@ -7,6 +7,13 @@ from pydantic import BaseModel, Field, field_validator
 
 class ChatRequest(BaseModel):
     query: str = Field(..., min_length=1, description="The question to answer")
+    conversation_id: Optional[str] = Field(
+        default=None,
+        description=(
+            "Continue an existing conversation (follow-ups are resolved against its "
+            "history). Omit to start a new one; its id is returned in the response."
+        ),
+    )
     # chunking_strategy / retrieval_alpha / top_k left null fall back to
     # server defaults (src/config.py ChatConfig: parent_child / 0.25 / 10).
     top_k: Optional[int] = Field(
@@ -117,6 +124,16 @@ class ToolCallTrace(BaseModel):
 
 
 class ChatResponse(BaseModel):
+    conversation_id: str = Field(description="Send back on the next turn to continue the conversation.")
+    turn_index: int = Field(default=0, description="0-based position of this turn in the conversation.")
+    turn_kind: str = Field(
+        default="new_question",
+        description="new_question | follow_up | about_previous_answer | chit_chat",
+    )
+    standalone_query: str = Field(
+        default="",
+        description="The question actually answered, with references to earlier turns resolved.",
+    )
     answer: str
     sources: List[SourceDocument] = Field(
         description="Every chunk the agent retrieved; sources[i] is [Source i+1] in the answer.",
@@ -347,3 +364,21 @@ class StartRunResponse(BaseModel):
     job_id: str
     run_tag: str
     status: str
+
+
+class ConversationTurn(BaseModel):
+    user_message: str
+    standalone_question: str
+    kind: str
+    answer: str
+    sources: List[Dict[str, Any]] = Field(default_factory=list)
+    created_at: str
+
+
+class ConversationResponse(BaseModel):
+    conversation_id: str
+    created_at: str
+    updated_at: str
+    summary: str = Field(description="Running summary of turns older than the verbatim window.")
+    state: Dict[str, List[str]] = Field(description="Active companies / filing labels, most recent first.")
+    turns: List[ConversationTurn]

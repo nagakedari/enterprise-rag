@@ -11,6 +11,9 @@ actually performed best, without reading every source file.
 > CSV artifacts in this repo. Numbers are means from actual evaluation runs
 > (n≈8–68 questions per run — see [Caveats](#caveats--how-to-read-this)).
 
+> Multi-turn conversations (memory, context storage, follow-up rewriting) are
+> documented separately in [MULTI_TURN_STRATEGIES.md](MULTI_TURN_STRATEGIES.md).
+
 ---
 
 ## 1. Chunking strategies

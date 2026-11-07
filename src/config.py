@@ -300,6 +300,54 @@ class ChatConfig:
 
 
 @dataclass
+class ConversationConfig:
+    """
+    Multi-turn conversations for POST /chat (src/conversation/, see
+    MULTI_TURN_STRATEGIES.md).
+
+    model rewrites follow-ups as standalone questions (gpt-4o: gpt-4o-mini
+    computed dates for relative periods in testing). light_model reworks the
+    previous answer and maintains the running summary. Neither produces new
+    facts; the agent still answers with AGENT_MODEL.
+
+    window_turns recent turns are shown verbatim (answers cut to
+    max_answer_chars); older turns are folded into a running summary.
+    Conversations not updated for ttl_days are purged on startup.
+
+    Override via CONVERSATION_STORE (sqlite | memory) / CONVERSATION_DB_PATH /
+    CONVERSATION_MODEL / CONVERSATION_LIGHT_MODEL / CONVERSATION_WINDOW_TURNS /
+    CONVERSATION_MAX_ANSWER_CHARS / CONVERSATION_TTL_DAYS.
+    """
+    store: str = field(
+        default_factory=lambda: os.getenv("CONVERSATION_STORE", "sqlite")
+    )
+    db_path: Path = field(
+        default_factory=lambda: Path(os.getenv("CONVERSATION_DB_PATH", "./storage/conversations.db"))
+    )
+    model: str = field(
+        default_factory=lambda: os.getenv("CONVERSATION_MODEL", "gpt-4o")
+    )
+    light_model: str = field(
+        default_factory=lambda: os.getenv("CONVERSATION_LIGHT_MODEL", "gpt-4o-mini")
+    )
+    api_key: str = field(
+        default_factory=lambda: os.getenv("OPENAI_API_KEY", "")
+    )
+    window_turns: int = field(
+        default_factory=lambda: int(os.getenv("CONVERSATION_WINDOW_TURNS", "4"))
+    )
+    max_answer_chars: int = field(
+        default_factory=lambda: int(os.getenv("CONVERSATION_MAX_ANSWER_CHARS", "1500"))
+    )
+    max_tokens: int = field(
+        default_factory=lambda: int(os.getenv("CONVERSATION_MAX_TOKENS", "1024"))
+    )
+    ttl_days: int = field(
+        default_factory=lambda: int(os.getenv("CONVERSATION_TTL_DAYS", "30"))
+    )
+
+
+@dataclass
 class RetrievalConfig:
     """Vector retrieval settings."""
     top_k: int = field(
@@ -340,6 +388,7 @@ class Config:
     router: RouterConfig = field(default_factory=RouterConfig)
     agent: AgentConfig = field(default_factory=AgentConfig)
     chat: ChatConfig = field(default_factory=ChatConfig)
+    conversation: ConversationConfig = field(default_factory=ConversationConfig)
     retrieval: RetrievalConfig = field(default_factory=RetrievalConfig)
     # Persistent docstore for LlamaIndex AutoMergingRetriever (smart mode)
     llamaindex_docstore_path: Path = field(

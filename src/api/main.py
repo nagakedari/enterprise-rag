@@ -2,9 +2,14 @@
 Enterprise RAG – FastAPI application.
 
 Endpoints:
-    POST /chat   – answer a question with an agentic tool-calling loop
-                   (vector search + Python calculators, model-driven)
-    GET  /health – liveness check
+    POST   /chat                       – one conversation turn: follow-ups are
+                                         resolved against the conversation's
+                                         history, then answered by the agentic
+                                         tool-calling loop (vector search +
+                                         Python calculators, model-driven)
+    GET    /conversations/{id}         – conversation history, summary, state
+    DELETE /conversations/{id}         – forget a conversation
+    GET    /health                     – liveness check
 
 Run locally:
     uvicorn src.api.main:app --reload --port 8000
@@ -26,8 +31,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
 from src.api.evaluation_routes import router as evaluation_router
-from src.agentic import run_agent
-from src.api.models import ChatRequest, ChatResponse, SourceDocument, ToolCallTrace
+from src.agentic import AgentRunResult, run_agent
+from src.api.models import (
+    ChatRequest, ChatResponse, ConversationResponse, ConversationTurn, SourceDocument, ToolCallTrace,
+)
+from src.conversation import AnswerOutcome, ConversationManager, ConversationNotFound, make_store
 from src.config import Config
 from src.retrieval.retriever import FilingPeriod, RetrievedChunk, list_filing_periods, retrieve
 from src.retrieval.llamaindex_retriever import retrieve_llamaindex
@@ -56,6 +64,13 @@ app.include_router(evaluation_router)
 
 # Instantiate config once at startup (reads env vars)
 _config = Config()
+
+_conversations = ConversationManager(
+    make_store(_config.conversation.store, _config.conversation.db_path), _config.conversation,
+)
+_purged = _conversations.store.purge_older_than(_config.conversation.ttl_days)
+if _purged:
+    logger.info("Purged %d conversation(s) older than %d days", _purged, _config.conversation.ttl_days)
 
 
 @app.get("/health")
@@ -221,13 +236,31 @@ def chat(request: ChatRequest) -> ChatResponse:
         request.company, request.year, request.quarter,
     )
 
-    try:
-        result = run_agent(
-            query=request.query,
+    def answer_with_agent(question: str) -> AnswerOutcome:
+        """Single-turn answerer the conversation manager calls for new questions / follow-ups."""
+        agent_result = run_agent(
+            query=question,
             search_fn=functools.partial(_retrieve_for_request, request),
             config=_config.agent,
             filings=_filing_catalog(request),
         )
+        plan_topics = (agent_result.plan or {}).get("sub_topics") or []
+        companies = [c for t in plan_topics for c in (t.get("companies") or [])]
+        periods = [p for t in plan_topics for p in (t.get("periods") or [])]
+        if request.company:
+            companies.insert(0, request.company)
+        return AnswerOutcome(
+            answer=agent_result.answer,
+            sources=[{"source_file": c.source_file, "pages": [c.page_start, c.page_end]} for c in agent_result.sources],
+            companies=list(dict.fromkeys(companies)),
+            periods=list(dict.fromkeys(periods)),
+            payload=agent_result,
+        )
+
+    try:
+        turn = _conversations.handle(request.query, answer_with_agent, request.conversation_id)
+    except ConversationNotFound as exc:
+        raise HTTPException(status_code=404, detail=f"Unknown conversation_id {request.conversation_id!r}") from exc
     except RetrievalError as exc:
         logger.exception("Retrieval failed")
         raise HTTPException(status_code=502, detail=f"Retrieval error: {exc}") from exc
@@ -235,8 +268,11 @@ def chat(request: ChatRequest) -> ChatResponse:
         logger.exception("Agent failed")
         raise HTTPException(status_code=502, detail=f"Agent error: {exc}") from exc
 
+    # Turns answered without the agent (chit-chat, reworking the last answer)
+    # have no sources or tool calls of their own.
+    result: AgentRunResult = turn.payload or AgentRunResult(answer=turn.answer, sources=[], tool_calls=[], iterations=0)
     chunks = result.sources
-    answer = result.answer
+    answer = turn.answer
 
     # ── Build response ─────────────────────────────────────────────────────────
     def source_document(c: RetrievedChunk, repeats: Optional[List[int]] = None) -> SourceDocument:
@@ -257,6 +293,10 @@ def chat(request: ChatRequest) -> ChatResponse:
     repeated_sources = [source_document(c, repeats) for c, repeats in result.repeated_sources]
 
     return ChatResponse(
+        conversation_id=turn.conversation_id,
+        turn_index=turn.turn_index,
+        turn_kind=turn.kind,
+        standalone_query=turn.standalone_question,
         answer=answer,
         sources=sources,
         query=request.query,
@@ -270,6 +310,34 @@ def chat(request: ChatRequest) -> ChatResponse:
         agent_plan=result.plan,
         agent_topics=result.topics,
     )
+
+
+@app.get("/conversations/{conversation_id}", response_model=ConversationResponse)
+def get_conversation(conversation_id: str) -> ConversationResponse:
+    conversation = _conversations.get(conversation_id)
+    if conversation is None:
+        raise HTTPException(status_code=404, detail=f"Unknown conversation_id {conversation_id!r}")
+    return ConversationResponse(
+        conversation_id=conversation.id,
+        created_at=conversation.created_at,
+        updated_at=conversation.updated_at,
+        summary=conversation.summary,
+        state=conversation.state,
+        turns=[
+            ConversationTurn(
+                user_message=t.user_message, standalone_question=t.standalone_question, kind=t.kind,
+                answer=t.answer, sources=t.sources, created_at=t.created_at,
+            )
+            for t in conversation.turns
+        ],
+    )
+
+
+@app.delete("/conversations/{conversation_id}")
+def delete_conversation(conversation_id: str):
+    if not _conversations.delete(conversation_id):
+        raise HTTPException(status_code=404, detail=f"Unknown conversation_id {conversation_id!r}")
+    return {"deleted": conversation_id}
 
 
 if __name__ == "__main__":
