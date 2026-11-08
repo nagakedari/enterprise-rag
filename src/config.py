@@ -305,6 +305,7 @@ class ConversationConfig:
     Multi-turn conversations for POST /chat (src/conversation/, see
     MULTI_TURN_STRATEGIES.md).
 
+    classifier decides the turn kind (Jev by default, falling back to `model`).
     model rewrites follow-ups as standalone questions (gpt-4o: gpt-4o-mini
     computed dates for relative periods in testing). light_model reworks the
     previous answer and maintains the running summary. Neither produces new
@@ -315,6 +316,8 @@ class ConversationConfig:
     Conversations not updated for ttl_days are purged on startup.
 
     Override via CONVERSATION_STORE (sqlite | memory) / CONVERSATION_DB_PATH /
+    CONVERSATION_CLASSIFIER (jev | openai) / TYPESAFE_API_KEY / JEV_MODEL /
+    JEV_ENDPOINT / JEV_TIMEOUT_SECONDS /
     CONVERSATION_MODEL / CONVERSATION_LIGHT_MODEL / CONVERSATION_WINDOW_TURNS /
     CONVERSATION_MAX_ANSWER_CHARS / CONVERSATION_TTL_DAYS.
     """
@@ -329,6 +332,29 @@ class ConversationConfig:
     )
     light_model: str = field(
         default_factory=lambda: os.getenv("CONVERSATION_LIGHT_MODEL", "gpt-4o-mini")
+    )
+    # Turn-kind classification: "jev" (TypeSafe Jev, called on TypeSafe's own
+    # API — a typed choice with probabilities, $0.042 per 1M input tokens,
+    # output free) with automatic fallback to `model`; or "openai" to always
+    # classify with `model`. Pinned version (not jev-latest) so classification
+    # doesn't change silently between evaluation runs. Via OpenRouter instead:
+    # JEV_ENDPOINT=https://openrouter.ai/api/alpha/decisions,
+    # JEV_MODEL=typesafe/jev-1.14 and an OpenRouter key (sk-or-v1-…).
+    classifier: str = field(
+        default_factory=lambda: os.getenv("CONVERSATION_CLASSIFIER", "jev")
+    )
+    jev_api_key: str = field(
+        # OPENROUTER_API_KEY accepted for backward compatibility
+        default_factory=lambda: os.getenv("TYPESAFE_API_KEY") or os.getenv("OPENROUTER_API_KEY", "")
+    )
+    jev_model: str = field(
+        default_factory=lambda: os.getenv("JEV_MODEL", "jev-1.14.0")
+    )
+    jev_endpoint: str = field(
+        default_factory=lambda: os.getenv("JEV_ENDPOINT", "https://api.typesafe.ai/v1/systemone")
+    )
+    jev_timeout: float = field(
+        default_factory=lambda: float(os.getenv("JEV_TIMEOUT_SECONDS", "10"))
     )
     api_key: str = field(
         default_factory=lambda: os.getenv("OPENAI_API_KEY", "")

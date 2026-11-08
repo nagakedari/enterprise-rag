@@ -24,11 +24,13 @@ POST /chat {query, conversation_id?}
    │
    ├─ first turn? ──► answer as-is                  no extra LLM call
    │
-   └─ contextualize(message, history)               CONVERSATION_MODEL (gpt-4o)
-         ├─ chit_chat              ──► direct reply                 no retrieval
+   └─ contextualize(message, history)   LangChain LCEL chain: classify | branch
+         classify: Jev (TypeSafe API, jev-1.14.0)       $0.042 / 1M input tokens
+                   .with_fallbacks([gpt-4o classification prompt])
+         ├─ chit_chat              ──► short reply (gpt-4o-mini)    no retrieval
          ├─ about_previous_answer  ──► rework the last answer       no retrieval
-         └─ new_question / follow_up
-                 ──► agent(standalone question)                     AGENT_MODEL
+         ├─ follow_up              ──► rewrite chain (gpt-4o) ──► agent(standalone)
+         └─ new_question           ──► agent(message unchanged)     AGENT_MODEL
    │
    └─ store turn → update entity state → fold old turns into summary
 ```
@@ -117,11 +119,31 @@ grounding simple at the cost of some repeated retrieval.
 | **Rewrite + multi-query** | The rewrite produces several phrasings | Better recall, more searches |
 | **Entity-filter carry-over only** | Carry company/period filters, keep the user's text | Cheap, but "why did it drop?" stays unanswerable |
 
-### 4.2 Implemented: condense-question rewrite + routing
+### 4.2 Implemented: classify → rewrite as a LangChain chain
 
-`src/conversation/contextualizer.py`, a forced `contextualize` function
-call that returns `{kind, standalone_question, direct_reply}`. The rules
-were all added because of test failures, and all are general:
+`src/conversation/contextualizer.py` builds one LCEL chain:
+`RunnablePassthrough.assign(classification=classify) | RunnableBranch(...)`.
+
+- **Classification is a separate step, on Jev.** TypeSafe's Jev, called on
+  TypeSafe's own API (`POST https://api.typesafe.ai/v1/systemone`, pinned
+  `jev-1.14.0` rather than `jev-latest` so behaviour doesn't change between
+  evaluation runs), answers one typed `choice` question with the four turn kinds as `criteria`,
+  returning `choice`, `probabilities` and `confidence`. It's a dedicated
+  classification model, about $0.04 per 1M input tokens with free output
+  (vendor figures). `with_fallbacks` switches to a gpt-4o classification
+  prompt whenever Jev can't answer (no `TYPESAFE_API_KEY`, HTTP error,
+  unknown label), so the app never depends on it.
+  `CONVERSATION_CLASSIFIER=openai` skips Jev entirely.
+- **The rewrite prompt does query rewriting only** (`ChatPromptTemplate |
+  ChatOpenAI(gpt-4o) | StrOutputParser`). It runs only for `follow_up`.
+  `new_question` and `about_previous_answer` pass the message through
+  untouched, and `chit_chat` gets a one-line gpt-4o-mini reply (Jev returns
+  labels, not text).
+- Each turn records which classifier decided (`jev` or `openai`) and Jev's
+  confidence, in the logs and on `Contextualized`.
+
+The rewrite rules were all added because of test failures, and all are
+general:
 - **Ask exactly what the user asked.** Keep the intent words: compare, why,
   how did it change, trend.
 - **Carry over only what the message leaves implicit.** For "what about
@@ -174,8 +196,25 @@ silently searched the latest filing (Q3) and answered with the Q3 figure as
 if it were Q4. The rule to report periods that aren't covered exists in the
 prompt but isn't enforced in code.
 
+**After splitting into a LangChain classify → rewrite chain (2026-11-08):**
+- Mocked: the Jev request format, branching per kind, and the fallback on a
+  503 or missing key all behave as intended.
+- Live 14-case set on the fallback path (gpt-4o classifies, gpt-4o
+  rewrites): **14/14**.
+- **Jev live (TypeSafe direct, `jev-1.14.0`): 14/14**, all decided by Jev
+  with no fallback, confidence 0.87–1.0. One classification is about 550
+  input tokens, so roughly $0.00002 per turn.
+- **Provider choice:** TypeSafe hosts Jev itself; OpenRouter, Vercel AI
+  Gateway and Netlify resell it at about the same price. First-party direct
+  was chosen: no alpha proxy endpoint, pinned versions, the vendor's own
+  rate limits. A TypeSafe key (`apikey_…`) gets **401 at OpenRouter**, which
+  only accepts its own `sk-or-v1-…` keys. To use OpenRouter instead, set
+  `JEV_ENDPOINT=https://openrouter.ai/api/alpha/decisions`,
+  `JEV_MODEL=typesafe/jev-1.14` and an OpenRouter key.
+
 So the rewrite uses **gpt-4o** (`CONVERSATION_MODEL`), at about $0.005 per
-follow-up turn. Reworking the previous answer and the summary use
+follow-up turn. With Jev classifying, new questions, reworks and chit-chat
+cost almost nothing to route. Reworking the previous answer and the summary use
 **gpt-4o-mini** (`CONVERSATION_LIGHT_MODEL`): those tasks only restate text
 that's already there.
 
@@ -220,7 +259,8 @@ store only needs those four methods.
 
 | Call | Input | Never sees |
 |---|---|---|
-| Contextualizer (gpt-4o) | summary + last 4 turns (answers truncated) + entity state + new message | retrieved filing text |
+| Classifier (Jev; gpt-4o fallback) | summary + last 4 turns + entity state + new message | retrieved filing text |
+| Rewriter (gpt-4o, follow-ups only) | same as the classifier | retrieved filing text |
 | Agent planner and answer (gpt-4o) | the standalone question + filing catalog | conversation history |
 | Rework previous answer (gpt-4o-mini) | previous question + previous answer + request | filings, older turns |
 | Summary (gpt-4o-mini) | current summary + evicted turns | filings |
@@ -256,7 +296,10 @@ An unknown id returns 404.
 |---|---|---|
 | `CONVERSATION_STORE` | `sqlite` | `sqlite` or `memory` |
 | `CONVERSATION_DB_PATH` | `./storage/conversations.db` | SQLite file |
-| `CONVERSATION_MODEL` | `gpt-4o` | Follow-up rewriting and turn classification |
+| `CONVERSATION_CLASSIFIER` | `jev` | Turn-kind classifier: `jev` (falls back to `CONVERSATION_MODEL`) or `openai` |
+| `TYPESAFE_API_KEY` | — | Jev key from TypeSafe's console (`OPENROUTER_API_KEY` is also read, for backward compatibility); without one the fallback classifier is used |
+| `JEV_MODEL` / `JEV_ENDPOINT` / `JEV_TIMEOUT_SECONDS` | `jev-1.14.0` / `https://api.typesafe.ai/v1/systemone` / `10` | Jev call settings |
+| `CONVERSATION_MODEL` | `gpt-4o` | Follow-up rewriting; fallback classification |
 | `CONVERSATION_LIGHT_MODEL` | `gpt-4o-mini` | Reworking the last answer; running summary |
 | `CONVERSATION_WINDOW_TURNS` | `4` | Turns shown verbatim |
 | `CONVERSATION_MAX_ANSWER_CHARS` | `1500` | Truncation of past answers in history |

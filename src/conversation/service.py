@@ -80,7 +80,7 @@ class ConversationManager:
         cfg = self.config
         if conversation.turns:
             history = render_history(conversation, cfg.window_turns, cfg.max_answer_chars)
-            ctx = contextualizer.contextualize(message, history, cfg.model, cfg.api_key)
+            ctx = contextualizer.contextualize(message, history, cfg)
         else:
             ctx = contextualizer.Contextualized(NEW_QUESTION, message)
 
